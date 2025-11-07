@@ -3,7 +3,11 @@ name: Auto Assign Author
 on:
   pull_request_target:
     types: [opened, reopened]
-
+    
+permissions:
+  pull-requests: write
+  repository-projects: read
+  
 jobs:
   assignAuthor:
      name: Assign Author to PR
