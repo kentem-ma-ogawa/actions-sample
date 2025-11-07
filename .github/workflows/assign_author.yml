@@ -14,3 +14,4 @@ jobs:
      timeout-minutes: 1
      steps:
       - uses: technote-space/assign-author@v1
+      # assigned
