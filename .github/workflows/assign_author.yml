@@ -9,5 +9,6 @@ jobs:
      name: Assign Author to PR
      runs-on: ubuntu-slim
      timeout-minutes: 1
+     # コメント
      steps:
       - uses: technote-space/assign-author@v1
