@@ -1,0 +1,14 @@
+name: Auto Assign Author
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  assign-author:
+     name: Assign Author to PR
+     runs-on: ubuntu-slim
+     timeout-minutes: 1
+     steps:
+      - name: Assign Author to PR
+        uses: technote-space/assign-author@v1
