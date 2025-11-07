@@ -12,5 +12,9 @@ jobs:
      name: Assign Author to PR
      runs-on: ubuntu-slim
      timeout-minutes: 1
+     
+     # botでない、かつ、Assigneesが設定されていない場合にのみ実行する
+     if: endsWith(github.actor, '[bot]') == false && github.event.pull_request.assignee == null
+
      steps:
       - uses: technote-space/assign-author@v1
