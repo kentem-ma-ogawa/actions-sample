@@ -10,7 +10,7 @@ permissions:
 jobs:
   assign-author:
      name: Assign Author to PR
-     runs-on: ubuntu-latest
+     runs-on: ubuntu-slim
      timeout-minutes: 1
      steps:
       - uses: technote-space/assign-author@v1
