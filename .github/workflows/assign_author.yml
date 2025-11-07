@@ -11,4 +11,7 @@ jobs:
      timeout-minutes: 1
      steps:
       - name: Assign Author to PR
-        uses: technote-space/assign-author@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: gh pr edit ${{ github.event.number }} --add-assignee ${{ github.actor }}
