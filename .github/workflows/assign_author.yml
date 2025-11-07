@@ -5,13 +5,9 @@ on:
     types: [opened]
 
 jobs:
-  assign-author:
+  assignAuthor:
      name: Assign Author to PR
      runs-on: ubuntu-slim
      timeout-minutes: 1
      steps:
-      - name: Assign Author to PR
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: gh pr edit ${{ github.event.number }} --add-assignee ${{ github.actor }}
+      - uses: technote-space/assign-author@v1
