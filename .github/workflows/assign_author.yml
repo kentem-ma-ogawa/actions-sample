@@ -1,14 +1,14 @@
 name: Auto Assign Author
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened]
     
 permissions:
   pull-requests: write
   
 jobs:
-  assignAuthor:
+  assign-author:
      name: Assign Author to PR
      runs-on: ubuntu-latest
      timeout-minutes: 1
