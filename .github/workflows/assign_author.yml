@@ -3,7 +3,8 @@ name: Auto Assign Author
 on:
   pull_request:
     types: [opened]
-    
+
+# PRを操作するために必要な権限を設定
 permissions:
   pull-requests: write
   
