@@ -12,10 +12,11 @@ jobs:
       issue_ids: ${{ steps.extract.outputs.issue_ids }}
     steps:
     - name: Extract Redmine Issue ID
-      id: extract            
+      id: extract    
+      env:
+        PR_TITLE: ${{ github.event.pull_request.title }}
       run: |
-        TITLE="${{ github.event.pull_request.title }}"
-        ISSUE_IDS=$(echo "$TITLE" | grep -oi 'Redmine[[:space:]]*[0-9]\+' | grep -o '[0-9]\+' | tr '\n' ' ')
+        ISSUE_IDS=$(echo "$PR_TITLE" | grep -oi 'Redmine[[:space:]]*[0-9]\+' | grep -o '[0-9]\+' | tr '\n' ' ')
         echo "issue_ids=$ISSUE_IDS" >> $GITHUB_OUTPUT
         
   update-redmine-issues:
@@ -25,6 +26,7 @@ jobs:
     steps:
     - name: Update Redmine Issues     
       env:
+        # 本文に「`」などの特殊文字が含まれているとエラーになるので環境変数経由で渡す
         PR_BODY: ${{ github.event.pull_request.body }}
       run: |
         for ISSUE_ID in ${{ needs.extract.outputs.issue_ids }}; do
@@ -38,28 +40,33 @@ jobs:
           echo "text_for_redmine: $TEXT_FOR_REDMINE"
 
           # JSON文字列に変換
-          ESCAPED_JSON_STRING=$(jq -Rn --arg s "$TEXT_FOR_REDMINE" '$s')
+          ESCAPED_JSON_STRING=$(printf '%s' "$TEXT_FOR_REDMINE" | jq -Rs .)
           echo "escaped_json_string: $ESCAPED_JSON_STRING"
           
           if [ -n "$TEXT_FOR_REDMINE" ]; then
-            issue_update_body=$(printf '%s' "{
-              \"issue\": {
-                \"status_id\": $NEW_STATUS_ID,
-                \"assigned_to_id\": "000",
-                \"custom_fields\": [
-                  { \"id\": 111, \"value\": $ESCAPED_JSON_STRING }
+            issue_update_body=$(jq -n \
+            --argjson status "$NEW_STATUS_ID" \
+            --arg text "$TEXT_FOR_REDMINE" \
+            '{
+              issue: {
+                status_id: $status,
+                assigned_to_id: "000",
+                custom_fields: [
+                  { id: 111, value: $text }
                 ]
               }
-            }")
+            }')
           else
-            issue_update_body=$(printf '%s' "{
-              \"issue\": {
-                \"status_id\": $NEW_STATUS_ID,
-                \"assigned_to_id\": "000"
-              }
-            }")
+            issue_update_body=$(jq -n \
+              --argjson status "$NEW_STATUS_ID" \
+              '{
+                issue: {
+                  status_id: $status,
+                  assigned_to_id: "000"
+                }
+              }')
           fi
-        echo "issue_update_body: $issue_update_body"
+          echo "issue_update_body: $issue_update_body"
         done
 
 
