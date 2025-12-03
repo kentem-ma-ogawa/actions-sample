@@ -2,7 +2,7 @@ name: Update Redmine Issue
 
 on:
   pull_request:
-    types: [opened, reopend, closed]
+    types: [opened, reopened, closed]
 
 jobs:
   extract:
