@@ -60,8 +60,7 @@ jobs:
           fi
         fi
         echo "issue_update_body: $issue_update_body"
-        
-      done
+        done
 
 
 
