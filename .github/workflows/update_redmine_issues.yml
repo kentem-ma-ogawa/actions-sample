@@ -39,6 +39,38 @@ jobs:
           ')
           echo "text_for_redmine: $TEXT_FOR_REDMINE"
 
+          # MarkdownをRedmine Textileに変換
+          CONVERTED_TEXT=$(printf '%s' "$TEXT_FOR_REDMINE" | sed -E '
+            # 見出し: ## Title → h2. Title
+            s/^### (.+)$/h3. \1/g
+            s/^## (.+)$/h2. \1/g
+            s/^# (.+)$/h1. \1/g
+            
+            # 太字: **text** → *text*
+            s/\*\*([^*]+)\*\*/\*\1\*/g
+            
+            # イタリック: *text* → _text_
+            s/\*([^*]+)\*/_\1_/g
+            
+            # 取り消し線: ~~text~~ → -text-
+            s/~~([^~]+)~~/-\1-/g
+            
+            # コード: `code` → @code@
+            s/`([^`]+)`/@\1@/g
+            
+            # リスト: - item → * item
+            s/^- /\* /g
+            s/^  - /\*\* /g
+            s/^    - /\*\*\* /g
+            
+            # 番号付きリスト: 1. item → # item
+            s/^[0-9]+\. /# /g
+            
+            # リンク: [text](url) → "text":url
+            s/\[([^\]]+)\]\(([^)]+)\)/"\1":\2/g
+          ')     
+          echo "Converted text: $CONVERTED_TEXT"
+      
           # JSON文字列に変換
           ESCAPED_JSON_STRING=$(printf '%s' "$TEXT_FOR_REDMINE" | jq -Rs .)
           echo "escaped_json_string: $ESCAPED_JSON_STRING"
