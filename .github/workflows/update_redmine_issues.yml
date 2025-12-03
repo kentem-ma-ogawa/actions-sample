@@ -24,22 +24,21 @@ jobs:
     needs: extract
     steps:
     - name: Update Redmine Issues     
+      env:
+        PR_BODY: ${{ github.event.pull_request.body }}
       run: |
         for ISSUE_ID in ${{ needs.extract.outputs.issue_ids }}; do
           NEW_STATUS_ID="0"
-
-          PR_BODY="${{ github.event.pull_request.body }}"
         
           TEXT_FOR_REDMINE=$(printf '%s' "$PR_BODY" | awk '            
             /<!--[[:space:]]*Redmine[[:space:]]*:[[:space:]]*Start[[:space:]]*-->/ {flag=1; next}
             /<!--[[:space:]]*Redmine[[:space:]]*:[[:space:]]*End[[:space:]]*-->/   {flag=0}
             flag
           ')
-   
-          # バッククォートをエスケープ
-          SAFE_TEXT=$(printf '%s' "$TEXT_FOR_REDMINE" | sed 's/`/\\`/g')
+          echo "text_for_redmine: $TEXT_FOR_REDMINE"
 
-          ESCAPED_JSON_STRING=$(jq -Rn --arg s "$SAFE_TEXT" '$s')
+          # JSON文字列に変換
+          ESCAPED_JSON_STRING=$(jq -Rn --arg s "$TEXT_FOR_REDMINE" '$s')
           echo "escaped_json_string: $ESCAPED_JSON_STRING"
           
           if [ -n "$TEXT_FOR_REDMINE" ]; then
