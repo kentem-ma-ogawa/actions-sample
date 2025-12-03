@@ -35,7 +35,6 @@ jobs:
             /<!--[[:space:]]*Redmine[[:space:]]*:[[:space:]]*End[[:space:]]*-->/   {flag=0}
             flag
           ')
-          echo "text_for_redmine: $TEXT_FOR_REDMINE"
    
           # バッククォートをエスケープ
           TEXT_FOR_REDMINE_ESCAPED=$(printf '%s' "$TEXT_FOR_REDMINE" | sed 's/`/\\`/g')
