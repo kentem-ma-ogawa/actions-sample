@@ -36,7 +36,10 @@ jobs:
             flag
           ')
           echo "text_for_redmine: $TEXT_FOR_REDMINE"
-        
+   
+          # バッククォートをエスケープ
+          TEXT_FOR_REDMINE_ESCAPED=$(printf '%s' "$TEXT_FOR_REDMINE" | sed 's/`/\\`/g')
+
           ESCAPED_JSON_STRING=$(jq -Rn --arg s "$TEXT_FOR_REDMINE" '$s')
           echo "escaped_json_string: $ESCAPED_JSON_STRING"
           
