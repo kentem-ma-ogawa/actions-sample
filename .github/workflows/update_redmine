@@ -1,0 +1,69 @@
+name: Update Redmine Issue
+
+on:
+  pull_request:
+    types: [opened, reopend, closed]
+
+jobs:
+  extract:
+    runs-on: ubuntu-slim
+    timeout-minutes: 1
+    outputs:
+      issue_ids: ${{ steps.extract.outputs.issue_ids }}
+    steps:
+    - name: Extract Redmine Issue ID
+      id: extract            
+      run: |
+        TITLE="${{ github.event.pull_request.title }}"
+        ISSUE_IDS=$(echo "$TITLE" | grep -oi 'Redmine[[:space:]]*[0-9]\+' | grep -o '[0-9]\+' | tr '\n' ' ')
+        echo "issue_ids=$ISSUE_IDS" >> $GITHUB_OUTPUT
+        
+  update-redmine-issues:
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    needs: extract
+    steps:
+    - name: Update Redmine Issues     
+      run: |
+        for ISSUE_ID in ${{ needs.extract.outputs.issue_ids }}; do
+          NEW_STATUS_ID="0"
+
+          PR_BODY="${{ github.event.pull_request.body }}"
+        
+          TEXT_FOR_REDMINE=$(printf '%s' "$PR_BODY" | awk '            
+            /<!--[[:space:]]*Redmine[[:space:]]*:[[:space:]]*Start[[:space:]]*-->/ {flag=1; next}
+            /<!--[[:space:]]*Redmine[[:space:]]*:[[:space:]]*End[[:space:]]*-->/   {flag=0}
+            flag
+          ')
+          echo "text_for_redmine: $TEXT_FOR_REDMINE"
+        
+          ESCAPED_JSON_STRING=$(jq -Rn --arg s "$TEXT_FOR_REDMINE" '$s')
+          echo "escaped_json_string: $ESCAPED_JSON_STRING"
+          
+          if [ -n "$TEXT_FOR_REDMINE" ]; then
+            issue_update_body=$(printf '%%s' "{
+              \"issue\": {
+                \"status_id\": $NEW_STATUS_ID,
+                \"assigned_to_id\": 000,
+                \"custom_fields\": [
+                  { \"id\": 111, \"value\": \"$ESCAPED_JSON_STRING\" }
+                ]
+              }
+            }")
+          else
+            issue_update_body=$(printf '%%s' "{
+              \"issue\": {
+                \"status_id\": $NEW_STATUS_ID,
+                \"assigned_to_id\": 000
+              }
+            }")
+          fi
+        fi
+        echo "issue_update_body: $issue_update_body"
+        
+      done
+
+
+
+
+
