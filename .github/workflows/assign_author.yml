@@ -10,6 +10,7 @@ permissions:
 jobs:
   assign-author:
      name: Assign Author to PR
+     # 軽量なアクションなので、コスト削減のためubuntu-slimを指定
      runs-on: ubuntu-slim
      timeout-minutes: 1
      
