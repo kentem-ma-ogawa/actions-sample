@@ -41,20 +41,20 @@ jobs:
           echo "escaped_json_string: $ESCAPED_JSON_STRING"
           
           if [ -n "$TEXT_FOR_REDMINE" ]; then
-            issue_update_body=$(printf '%%s' "{
+            issue_update_body=$(printf '%s' "{
               \"issue\": {
                 \"status_id\": $NEW_STATUS_ID,
-                \"assigned_to_id\": 000,
+                \"assigned_to_id\": "000",
                 \"custom_fields\": [
-                  { \"id\": 111, \"value\": \"$ESCAPED_JSON_STRING\" }
+                  { \"id\": 111, \"value\": $ESCAPED_JSON_STRING }
                 ]
               }
             }")
           else
-            issue_update_body=$(printf '%%s' "{
+            issue_update_body=$(printf '%s' "{
               \"issue\": {
                 \"status_id\": $NEW_STATUS_ID,
-                \"assigned_to_id\": 000
+                \"assigned_to_id\": "000"
               }
             }")
           fi
