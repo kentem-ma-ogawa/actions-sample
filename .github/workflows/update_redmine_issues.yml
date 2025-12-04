@@ -3,7 +3,10 @@ name: Update Redmine Issue
 on:
   pull_request:
     types: [opened, reopened, closed]
-
+    
+env: 
+  SAMPLE_NUMBER: ${{ secrets.SAMPLE_NUMBER }}
+  
 jobs:
   extract:
     if: >
@@ -39,6 +42,7 @@ jobs:
         PR_BODY: ${{ github.event.pull_request.body }}
       run: |
         for ISSUE_ID in ${{ needs.extract.outputs.issue_ids }}; do
+          echo "SAMPLE_NUMBER: $SAMPLE_NUMBER"
           NEW_STATUS_ID="0"
         
           TEXT_FOR_REDMINE=$(printf '%s' "$PR_BODY" | awk '            
@@ -72,13 +76,14 @@ jobs:
           
             issue_update_body=$(jq -n \
             --argjson status "$NEW_STATUS_ID" \
+            --argjson number "$SAMPLE_NUMBER" \
             --arg text "$NEW_VALUE" \
             '{
               issue: {
                 status_id: $status,
                 assigned_to_id: "000",
                 custom_fields: [
-                  { id: 111, value: $text }
+                  { id: $number, value: $text }
                 ]
               }
             }')
