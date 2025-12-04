@@ -55,7 +55,7 @@ jobs:
             echo "converted_text: $CONVERTED_TEXT"
 
             # 現在記入されているテキストを取得
-            OLD_VALUE="* 元の値\r\n** です"
+            OLD_VALUE=""
   
             # 仕切り線
             SEPARATOR='---'
