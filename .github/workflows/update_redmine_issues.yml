@@ -64,7 +64,7 @@ jobs:
           if [ -n "$TEXT_FOR_REDMINE" ]; then
             issue_update_body=$(jq -n \
             --argjson status "$NEW_STATUS_ID" \
-            --arg text "$TEXT_FOR_REDMINE" \
+            --arg text "$ESCAPED_JSON_STRING" \
             '{
               issue: {
                 status_id: $status,
