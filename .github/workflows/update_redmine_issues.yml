@@ -51,7 +51,7 @@ jobs:
           if [ -n "$TEXT_FOR_REDMINE" ]; then
             # Markdown → Textile に変換
             CONVERTED_TEXT=$(printf '%s' "$TEXT_FOR_REDMINE" \
-              | pandoc --from=markdown --to=textile --wrap=none)
+              | pandoc --from=markdown --to=textile)
             echo "converted_text: $CONVERTED_TEXT"
           
             issue_update_body=$(jq -n \
