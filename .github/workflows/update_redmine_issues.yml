@@ -49,22 +49,16 @@ jobs:
             flag
           ')
           echo "text_for_redmine: $TEXT_FOR_REDMINE"
-
-          
-          # Markdown → Textile に変換
-          CONVERTED_TEXT=$(printf '%s' "$TEXT_FOR_REDMINE" \
-            | pandoc --from=markdown --to=textile --wrap=none)
-          echo "converted_text: $CONVERTED_TEXT"
-
-      
-          # JSON文字列に変換
-          ESCAPED_JSON_STRING=$(printf '%s' "$CONVERTED_TEXT" | jq -Rs .)
-          echo "escaped_json_string: $ESCAPED_JSON_STRING"
           
           if [ -n "$TEXT_FOR_REDMINE" ]; then
+            # Markdown → Textile に変換
+            CONVERTED_TEXT=$(printf '%s' "$TEXT_FOR_REDMINE" \
+              | pandoc --from=markdown --to=textile --wrap=none)
+            echo "converted_text: $CONVERTED_TEXT"
+          
             issue_update_body=$(jq -n \
             --argjson status "$NEW_STATUS_ID" \
-            --arg text "$ESCAPED_JSON_STRING" \
+            --arg text "$CONVERTED_TEXT" \
             '{
               issue: {
                 status_id: $status,
