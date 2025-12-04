@@ -6,7 +6,9 @@ on:
 
 jobs:
   extract:
-    if: contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix')
+    if: >
+      !(github.event.action == 'closed' && github.event.pull_request.merged == false) &&
+      (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
     runs-on: ubuntu-slim
     timeout-minutes: 1
     outputs:
@@ -21,7 +23,9 @@ jobs:
         echo "issue_ids=$ISSUE_IDS" >> $GITHUB_OUTPUT
         
   update-redmine-issues:
-    if: contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix')
+    if: >
+      !(github.event.action == 'closed' && github.event.pull_request.merged == false) &&
+      (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
     runs-on: ubuntu-slim
     timeout-minutes: 5
     needs: extract
