@@ -42,7 +42,6 @@ jobs:
         PR_BODY: ${{ github.event.pull_request.body }}
       run: |
         for ISSUE_ID in ${{ needs.extract.outputs.issue_ids }}; do
-          echo "SAMPLE_NUMBER: $SAMPLE_NUMBER"
           NEW_STATUS_ID="0"
         
           TEXT_FOR_REDMINE=$(printf '%s' "$PR_BODY" | awk '            
