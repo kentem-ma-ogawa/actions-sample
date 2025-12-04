@@ -70,10 +70,11 @@ jobs:
             else
               NEW_VALUE=$(printf '%s' "$APPEND_BLOCK")
             fi
+            echo "new_value: $NEW_VALUE"
           
             issue_update_body=$(jq -n \
             --argjson status "$NEW_STATUS_ID" \
-            --arg text "$CONVERTED_TEXT" \
+            --arg text "$NEW_VALUE" \
             '{
               issue: {
                 status_id: $status,
