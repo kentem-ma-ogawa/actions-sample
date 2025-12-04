@@ -59,7 +59,7 @@ jobs:
   
             # 仕切り線とタイムスタンプを付けて追記（好みに応じて調整）
             APPEND_BLOCK=$(printf '%s\n' "----" \
-              "PRのコメントを自動記入 $(date -u +'%Y-%m-%dT%H:%M:%SZ'):" \
+              "PRのコメントを自動記入 $(date -u +'%Y-%m-%d'):" \
               "$CONVERTED_TEXT")
   
             # 既存テキストに追記
