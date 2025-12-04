@@ -47,12 +47,29 @@ jobs:
             flag
           ')
           echo "text_for_redmine: $TEXT_FOR_REDMINE"
-          
+
           if [ -n "$TEXT_FOR_REDMINE" ]; then
             # Markdown → Textile に変換
             CONVERTED_TEXT=$(printf '%s' "$TEXT_FOR_REDMINE" \
               | pandoc --from=gfm+hard_line_breaks --to=textile --wrap=none)
             echo "converted_text: $CONVERTED_TEXT"
+
+            # 現在記入されているテキストを取得
+            OLD_VALUE="* 元の値\r\n** です"
+  
+            # 仕切り線とタイムスタンプを付けて追記（好みに応じて調整）
+            APPEND_BLOCK=$(printf '%s\n' "----" \
+              "PRのコメントを自動記入 $(date -u +'%Y-%m-%dT%H:%M:%SZ'):" \
+              "$CONVERTED_TEXT")
+  
+            # 既存テキストに追記
+            #    Textileは空行で段落区切りになるので、2つの改行を挟むのが安全
+            #    既存値が空ならそのまま新規値、そうでなければ改行+APPEND_BLOCKを追加
+            if [ -n "$OLD_VALUE" ]; then
+              NEW_VALUE=$(printf '%s\n\n%s' "$OLD_VALUE" "$APPEND_BLOCK")
+            else
+              NEW_VALUE=$(printf '%s' "$APPEND_BLOCK")
+            fi
           
             issue_update_body=$(jq -n \
             --argjson status "$NEW_STATUS_ID" \
