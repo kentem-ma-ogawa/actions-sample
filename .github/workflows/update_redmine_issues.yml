@@ -57,20 +57,20 @@ jobs:
             # 現在記入されているテキストを取得
             OLD_VALUE="* 元の値\r\n** です"
   
-            # 追記するテキストの前に挿入する仕切り線
-            SEPARATOR="---"
+            # 仕切り線
+            SEPARATOR='---'
             # 追記するテキスト
-            APPEND_TEXT=$(printf '%s\n' \
+            APPEND_TEXT=$(printf '%s\n%s\n' \
               "【$(date -u +'%Y/%m/%d')】プルリクの内容を自動記入:" \
               "$CONVERTED_TEXT")
               
             # 既存テキストに追記
             #    Textileは空行で段落区切りになるので、2つの改行を挟むのが安全
             #    既存値が空ならそのまま新規値、そうでなければ改行+APPEND_BLOCKを追加
-            if [ -n "$OLD_VALUE" ]; then
-              NEW_VALUE=$(printf '%s\n\n%s' "$OLD_VALUE" "$SEPARATOR" "$APPEND_BLOCK")
+            if [ -n "$OLD_VALUE" ]; then            
+              NEW_VALUE=$(printf '%s\n\n%s\n\n%s\n' "$OLD_VALUE" "$SEPARATOR" "$APPEND_TEXT")
             else
-              NEW_VALUE=$(printf '%s' "$APPEND_BLOCK")
+              NEW_VALUE=$(printf '%s' "$APPEND_TEXT")
             fi
             echo "new_value: $NEW_VALUE"
           
