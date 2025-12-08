@@ -9,7 +9,7 @@ env:
   SAMPLE_NUMBER: ${{ secrets.SAMPLE_NUMBER }}
 
 jobs:
-  extract_issue_ids:
+  extract:
     if: >
       (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
     runs-on: ubuntu-slim
@@ -37,8 +37,7 @@ jobs:
             }
 
   update_redmine_issues:
-    needs: [extract_issue_ids]
-    
+    needs: [extract]    
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
@@ -48,8 +47,8 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            core.info(needs.extract_issue_ids.outputs.issue_ids);
-            core.info(fromJSON(needs.extract_issue_ids.outputs.issue_ids || '[]'));
+            core.info(needs.extract.outputs.issue_ids);
+            core.info(fromJSON(needs.extract.outputs.issue_ids || '[]'));
             const body = context.payload.pull_request?.body || '';
             const redmineFiledRegex = /<!--\s*Redmine\s*:\s*Start\s*-->([\s\S]*?)<!--\s*Redmine\s*:\s*End\s*-->/i;
             const match = body.match(redmineFiledRegex);
