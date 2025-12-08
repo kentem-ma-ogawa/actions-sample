@@ -86,14 +86,14 @@ jobs:
           fi
           
           if [ "${{ github.event.action }}" = "opened" ]; then
-            status="0"
-            author=""
+            status=0
+            author="null"
           else
-            status="1"
-            author="222"
+            status=1
+            author=222
           fi
 
-          remarks=""
+          remarks="null"
           if [ -n "$APPEND_TEXT" ]; then
             remarks=$(jq -n \
               --arg number "$SAMPLE_NUMBER" \
@@ -104,16 +104,16 @@ jobs:
           
           issue_update_body="$(jq -n \
             --argjson status "$status" \
-            --arg author_str "$author" \
-            --argjson remarks_json "${remarks:-null}" \
+            --argjson author "$author" \
+            --argjson remarks "$remarks" \
             '
             .issue = {status_id: $status}
-            | ( if ($author_str | length) > 0
-                then .issue += {assigned_to_id: ($author_str | tonumber)}
+            | ( if $author != null
+                then .issue += { assigned_to_id: $author }
                 else .
               end )
-            | ( if $remarks_json != null
-                then .issue += {custom_fields: $remarks_json}
+            | ( if $remarks != null
+                then .issue += { custom_fields: $remarks }
                 else .
               end )
             ')"
