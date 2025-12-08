@@ -23,7 +23,6 @@ jobs:
         with:
           script: |
             const { execFileSync } = require('child_process');
-            const core = require('@actions/core');
             
             // ========================================
             // 1. PRタイトルからRedmineのissueIdを抽出
