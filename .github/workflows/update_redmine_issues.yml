@@ -14,7 +14,7 @@ jobs:
       (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
     runs-on: ubuntu-slim
     timeout-minutes: 5
-    container: ghcr.io/pandoc/core:3.8
+    container: ghcr.io/pandoc/core:3.8 # ← Pandoc入りで setup不要
     steps:
       - name: Update Redmine Issues
         uses: actions/github-script@v7      
