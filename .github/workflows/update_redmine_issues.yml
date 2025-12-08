@@ -93,7 +93,8 @@ jobs:
                 '[{ id: ($number | tonumber), value: $text }]')
             fi
           fi
-
+          echo "status: $status, author: $author, remarks: $remarks"
+          
           issue_update_body=$(jq -n \
             --argjson status "$status" \
             --argjson author "${author:-null}" \
