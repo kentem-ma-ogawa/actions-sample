@@ -43,7 +43,14 @@ jobs:
           flag
         ')
         echo "Text for redmine: $TEXT_FOR_REDMINE"
-        echo "pr_text=$TEXT_FOR_REDMINE >> $GITHUB_OUTPUT"
+        
+        # 出力（複数行対応）
+        {
+          echo "pr_text<<EOF"
+          printf '%s\n' "$TEXT_FOR_REDMINE"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
    
     # Pandocをセットアップ
     - name: Setup Pandoc
@@ -56,7 +63,7 @@ jobs:
       id: create_append_text
       env:
         TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.pr_text }}
-      if: env.TEXT_FOR_REDMINE != ""
+      if: ${{ steps.extract_pr_text.outputs.pr_text != '' }}
       run: |
         CONVERTED_PR_TEXT=$(printf '%s' "$TEXT_FOR_REDMINE" \
           | pandoc --sandbox --from=gfm-raw_html+hard_line_breaks --to=textile --wrap=none)
