@@ -103,7 +103,7 @@ jobs:
           SAMPLE_NUMBER: ${{ env.SAMPLE_NUMBER }}
         with:
           script: |
-            const issueIds = JSON.parse(core.getInput('issueIds', { required: false }) || '[]');
+            const issueIds = ISSUE_IDS;
             const appendText = process.env.APPEND_TEXT || '';
             const sampleNumber = Number(process.env.SAMPLE_NUMBER || 0);
 
