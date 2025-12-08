@@ -11,7 +11,7 @@ env:
 jobs:
   extract:
     if: >
-      (contains(fromJSON('["redmine", "bugfix"]'), github.head_ref))
+      (contains(toLower(github.head_ref), 'redmine') || contains(toLower(github.head_ref), 'bugfix'))
     runs-on: ubuntu-slim
     timeout-minutes: 1
     outputs:
