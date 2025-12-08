@@ -32,13 +32,15 @@ jobs:
         echo "issue_ids=$ISSUE_IDS" >> $GITHUB_OUTPUT
     
     # PR本文からテキストを抽出し、PandocでTexileに変換
-    - name: Setup Pandoc and Extract PR Text
+    - name: Setup Pandoc
+        uses: pandoc/actions/setup@v1
+      with:
+        version: 3.8
+
+    - name: Extract PR Text and Convert to Textile 
       id: create_append_text
       env:
         PR_BODY: ${{ github.event.pull_request.body }}
-      uses: pandoc/actions/setup@v1
-      with:
-        version: 3.8
       run: |
         TEXT_FOR_REDMINE=$(printf '%s' "$PR_BODY" | awk '            
           /<!--[[:space:]]*Redmine[[:space:]]*:[[:space:]]*Start[[:space:]]*-->/ {flag=1; next}
