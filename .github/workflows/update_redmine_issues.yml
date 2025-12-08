@@ -32,11 +32,12 @@ jobs:
             core.setOutput('issueIds', JSON.stringify(issueIds));
             if (issueIds.length <= 0) {
               core.notice('PRタイトルにチケット番号が含まれていません。後続ジョブをスキップします。');
+              core.notice(JSON.stringify(issueIds));
             }
 
   update_redmine_issues:
     needs: [extract_issue_ids]
-    if: ${{ fromJSON(needs.extract_issue_ids.outputs.issueIds).length > 0 }}
+    if: ${{ needs.extract_issue_ids.outputs.issueIds != '' }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
