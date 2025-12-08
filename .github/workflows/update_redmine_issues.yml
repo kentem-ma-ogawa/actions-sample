@@ -61,7 +61,13 @@ jobs:
         NEW_TEXT=$(printf '%s\n%s\n' \
           "> 【$(date -u +'%Y/%m/%d')】↓自動記入" \
           "$CONVERTED_PR_TEXT")
-        echo "new_text=$NEW_TEXT" >> $GITHUB_OUTPUT
+
+        # $GITHUB_OUTPUT へ複数行出力（ヒアドキュメント形式）
+        {
+          echo "new_text<<EOF"
+          printf '%s\n' "$NEW_TEXT"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
 
     - name: Update Redmine Issues     
       run: |
