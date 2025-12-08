@@ -2,104 +2,100 @@ name: Update Redmine Issue
 
 on:
   pull_request:
-    types: [opened, reopened, closed]
-    
+    types: [opened, closed] 
+      
 env: 
   SAMPLE_NUMBER: ${{ secrets.SAMPLE_NUMBER }}
-  
+
 jobs:
-  extract:
-    if: >
-      (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
-    runs-on: ubuntu-slim
-    timeout-minutes: 1
-    outputs:
-      issue_ids: ${{ steps.extract.outputs.issue_ids }}
-    steps:
-    - name: Extract Redmine Issue ID
-      id: extract    
-      env:
-        PR_TITLE: ${{ github.event.pull_request.title }}
-      run: |
-        ISSUE_IDS=$(echo "$PR_TITLE" | grep -oi 'Redmine[[:space:]]*[0-9]\+' | grep -o '[0-9]\+' | tr '\n' ' ')
-        echo "issue_ids=$ISSUE_IDS" >> $GITHUB_OUTPUT
-        
   update-redmine-issues:
     if: >
       (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
     runs-on: ubuntu-slim
     timeout-minutes: 5
-    needs: extract
-    steps:   
-    - name: Setup Pandoc (Markdown → Textileに変換するのに使用する)
+    steps:
+    - name: Extract Redmine Issue IDs
+      id: extract   
+      env:
+        PR_TITLE: ${{ github.event.pull_request.title }}
+      run: |      
+        ISSUE_IDS="$(printf '%s' "$PR_TITLE" \
+          | grep -oi 'Redmine[[:space:]]*[0-9]\+' \
+          | grep -o '[0-9]\+' \
+          | tr '\n' ' ')"
+
+        # ISSUE_IDSが空なら終了し、その後のstepsをスキップ 
+        if [ -z "$ISSUE_IDS" ]; then
+          echo "Skipping update: Not found redmine issue ids"
+          exit 1
+        fi
+        echo "issue_ids=$ISSUE_IDS" >> $GITHUB_OUTPUT
+    
+    # PR本文からテキストを抽出し、PandocでTexileに変換
+    - name: Setup Pandoc and Extract PR Text
+      id: create_append_text
+      env:
+        PR_BODY: ${{ github.event.pull_request.body }}
       uses: pandoc/actions/setup@v1
       with:
         version: 3.8
+      run: |
+        TEXT_FOR_REDMINE=$(printf '%s' "$PR_BODY" | awk '            
+          /<!--[[:space:]]*Redmine[[:space:]]*:[[:space:]]*Start[[:space:]]*-->/ {flag=1; next}
+          /<!--[[:space:]]*Redmine[[:space:]]*:[[:space:]]*End[[:space:]]*-->/   {flag=0}
+          flag
+        ')
+        echo "Text for redmine: $TEXT_FOR_REDMINE"
+        
+        if [ -z "$TEXT_FOR_REDMINE" ]; then
+          echo "new_text=" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        CONVERTED_PR_TEXT=$(printf '%s' "$TEXT_FOR_REDMINE" \
+          | pandoc --sandbox --from=gfm-raw_html+hard_line_breaks --to=textile --wrap=none)
+        echo "Converted PR text: $CONVERTED_PR_TEXT"
+        
+        NEW_TEXT=$(printf '%s\n%s\n' \
+          "> 【$(date -u +'%Y/%m/%d')】↓自動記入" \
+          "$CONVERTED_PR_TEXT")
+        echo "new_text=$NEW_TEXT" >> $GITHUB_OUTPUT
 
     - name: Update Redmine Issues     
-      env:
-        # 本文に「`」などの特殊文字が含まれているとエラーになるので環境変数経由で渡す
-        PR_BODY: ${{ github.event.pull_request.body }}
       run: |
-        for ISSUE_ID in ${{ needs.extract.outputs.issue_ids }}; do
-          NEW_STATUS_ID="0"
-        
-          TEXT_FOR_REDMINE=$(printf '%s' "$PR_BODY" | awk '            
-            /<!--[[:space:]]*Redmine[[:space:]]*:[[:space:]]*Start[[:space:]]*-->/ {flag=1; next}
-            /<!--[[:space:]]*Redmine[[:space:]]*:[[:space:]]*End[[:space:]]*-->/   {flag=0}
-            flag
-          ')
-          echo "text_for_redmine: $TEXT_FOR_REDMINE"
+        for ISSUE_ID in ${{ steps.extract.outputs.issue_ids }}; do    
+          # 現在記入されているテキストを取得
+          ORIGINAL_TEXT=""
 
-          if [ -n "$TEXT_FOR_REDMINE" ]; then
-            # Markdown → Textile に変換
-            CONVERTED_TEXT=$(printf '%s' "$TEXT_FOR_REDMINE" \
-              | pandoc --from=gfm+hard_line_breaks --to=textile --wrap=none)
-            echo "converted_text: $CONVERTED_TEXT"
+          # 既存テキストと結合
+          NEW_TEXT="${ORIGINAL_TEXT:+${ORIGINAL_TEXT}"$'\n\n'}${{ steps.create_append_text.outputs.new_text }}"
 
-            # 現在記入されているテキストを取得
-            ORIGINAL_TEXT=""
-  
-            # 追記するテキスト
-            APPEND_TEXT=$(printf '%s\n%s\n' \
-              "> 【$(date -u +'%Y/%m/%d')】プルリクの内容を自動記入:" \
-              "$CONVERTED_TEXT")
-              
-            # 既存テキストに追記
-            if [ -n "$ORIGINAL_TEXT" ]; then            
-              NEW_VALUE=$(printf '%s\n\n%s\n\n%s\n' "$ORIGINAL_TEXT" "$APPEND_TEXT")
-            else
-              NEW_VALUE=$(printf '%s' "$APPEND_TEXT")
+          remarks=""
+          if [ "${{ github.event.action }}" = "opened" ]; then
+            status="0"
+            author=""
+          else
+            status="1"
+            author="000"
+
+            if [ -n "${{ steps.create_append_text.outputs.new_text }}" ]; then
+              remarks=$(jq -n \
+                --arg number "$SAMPLE_NUMBER" \
+                --arg text "$NEW_TEXT" \
+                '[{ id: ($number | tonumber), value: $text }]')
             fi
-            echo "new_value: $NEW_VALUE"
-          
-            issue_update_body=$(jq -n \
-            --argjson status "$NEW_STATUS_ID" \
-            --argjson number "$SAMPLE_NUMBER" \
-            --arg text "$NEW_VALUE" \
+          fi
+
+          issue_update_body=$(jq -n \
+            --argjson status "$status" \
+            --argjson author "${author:-null}" \
+            --argjson remarks "${remarks:-null}" \
             '{
               issue: {
-                status_id: $status,
-                assigned_to_id: "000",
-                custom_fields: [
-                  { id: $number, value: $text }
-                ]
+                status_id: $status
               }
+              + (if $author != null then {assigned_to_id: $author} else {} end)
+              + (if $remarks != null then {custom_fields: $remarks} else {} end)
             }')
-          else
-            issue_update_body=$(jq -n \
-              --argjson status "$NEW_STATUS_ID" \
-              '{
-                issue: {
-                  status_id: $status,
-                  assigned_to_id: "000"
-                }
-              }')
-          fi
           echo "issue_update_body: $issue_update_body"
         done
-
-
-
-
-
