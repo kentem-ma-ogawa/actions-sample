@@ -1,135 +1,151 @@
+
 name: Update Redmine Issue
 
 on:
   pull_request:
-    types: [opened, closed] 
-      
-env: 
+    types: [opened, closed]
+
+env:
   SAMPLE_NUMBER: ${{ secrets.SAMPLE_NUMBER }}
 
 jobs:
-  update-redmine-issues:
+  extract_issue_ids:
     if: >
       (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
     runs-on: ubuntu-slim
+    timeout-minutes: 1
+    outputs:
+      issue_ids: ${{ steps.extract.outputs.issue_ids }}
+    steps:
+      # PRタイトルからRedmineのissueIdを抽出
+      - name: Extract Redmine Issue IDs
+        id: extract_issue_ids
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = context.payload.pull_request?.title || '';
+            // "Redmine12345…" のようなテキストからチケット番号を抽出
+            const issueIds = [...title.matchAll(/Redmine\s*(\d+)/gi)]
+              .map(match => match?.[1] ?? '')
+              .filter(id => id != '');
+            
+            core.info(`issueIds: ${issueIds}`);
+            core.setOutput('issueIds', JSON.stringify(issueIds));
+            if (issueIds.length <= 0) {
+              core.notice('PRタイトルにチケット番号が含まれていません。後続ジョブをスキップします。');
+            }
+
+  update_redmine_issues:
+    needs: [extract_issue_ids]
+    if: ${{ needs.extract_issue_ids.outputs.issueIds != '[]' }}
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
-    - name: Extract Redmine Issue IDs
-      id: extract_issue_ids   
-      env:
-        PR_TITLE: ${{ github.event.pull_request.title }}
-      run: |      
-        ISSUE_IDS="$(printf '%s' "$PR_TITLE" \
-          | grep -oi 'Redmine[[:space:]]*[0-9]\+' \
-          | grep -o '[0-9]\+' \
-          | tr '\n' ' ')"
+      # PR本文から <!-- Redmine: Start --> … <!-- Redmine: End --> の範囲を抽出
+      - name: Extract PR Text
+        id: extract_pr_text
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request?.body || '';
+            const redmineFiledRegex = /<!--\s*Redmine\s*:\s*Start\s*-->([\s\S]*?)<!--\s*Redmine\s*:\s*End\s*-->/i;
+            const match = body.match(redmineFiledRegex);
+            const textForRedmine = match[1];
 
-        # ISSUE_IDSが空なら終了し、その後のstepsをスキップ 
-        if [ -z "$ISSUE_IDS" ]; then
-          echo "Skipping update: Not found redmine issue ids"
-          exit 0
-        fi
-        echo "issue_ids=$ISSUE_IDS" >> $GITHUB_OUTPUT
-    
-    # PR本文からテキストを抽出する
-    - name: Extract PR Text 
-      id: extract_pr_text
-      if: ${{ steps.extract_issue_ids.outputs.issue_ids != '' }}
-      env:
-        PR_BODY: ${{ github.event.pull_request.body }}
-      run: |
-        TEXT_FOR_REDMINE=$(printf '%s' "$PR_BODY" | awk '            
-          /<!--[[:space:]]*Redmine[[:space:]]*:[[:space:]]*Start[[:space:]]*-->/ {flag=1; next}
-          /<!--[[:space:]]*Redmine[[:space:]]*:[[:space:]]*End[[:space:]]*-->/   {flag=0}
-          flag
-        ')
-        echo "Text for redmine: $TEXT_FOR_REDMINE"
-        
-        # 出力（複数行対応）
-        {
-          echo "pr_text<<EOF"
-          printf '%s\n' "$TEXT_FOR_REDMINE"
-          echo "EOF"
-        } >> "$GITHUB_OUTPUT"
+            core.info(`Text for redmine: ${textForRedmine}`);
+            core.setOutput('textForRedmine', textForRedmine);
 
-   
-    # Pandocをセットアップ
-    - name: Setup Pandoc
-      if: ${{ steps.extract_issue_ids.outputs.issue_ids != '' }}
-      uses: pandoc/actions/setup@v1
-      with:
-        version: 3.8
-        
-    #抽出したテキストをPandocでTexileに変換し、追記するテキストを作成
-    - name: Convert to Textile 
-      id: create_append_text
-      env:
-        TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.pr_text }}
-      if: ${{ steps.extract_issue_ids.outputs.issue_ids != '' }} &&${{ steps.extract_pr_text.outputs.pr_text != '' }}
-      run: |
-        CONVERTED_PR_TEXT=$(printf '%s' "$TEXT_FOR_REDMINE" \
-          | pandoc --sandbox --from=gfm-raw_html+hard_line_breaks --to=textile --wrap=none)
-        echo "Converted PR text: $CONVERTED_PR_TEXT"
-        
-        NEW_TEXT=$(printf '%s\n%s\n' \
-          "> 【$(date -u +'%Y/%m/%d')】↓自動記入" \
-          "$CONVERTED_PR_TEXT")
-
-        # $GITHUB_OUTPUT へ複数行出力（ヒアドキュメント形式）
-        {
-          echo "new_text<<EOF"
-          printf '%s\n' "$NEW_TEXT"
-          echo "EOF"
-        } >> "$GITHUB_OUTPUT"
-
-    - name: Update Redmine Issues
-      if: ${{ steps.extract_issue_ids.outputs.issue_ids != '' }}
-      shell: bash
-      env:
-        APPEND_TEXT: ${{ steps.create_append_text.outputs.new_text }}
-      run: |
-        for ISSUE_ID in ${{ steps.extract_issue_ids.outputs.issue_ids }}; do    
-          # 現在記入されているテキストを取得
-          ORIGINAL_TEXT=""
-
-          # 既存テキストと結合          
-          if [[ -n "$ORIGINAL_TEXT" ]]; then
-            NEW_TEXT="$ORIGINAL_TEXT"$'\n\n'"$APPEND_TEXT"
-          else
-            NEW_TEXT="$APPEND_TEXT"
-          fi
+      # Pandoc をセットアップ
+      - name: Setup Pandoc
+        uses: pandoc/actions/setup@v1
+        with:
+          version: 3.8
           
-          if [ "${{ github.event.action }}" = "opened" ]; then
-            status=0
-            author="null"
-          else
-            status=1
-            author=222
-          fi
+      # 抽出テキストを Pandoc で Textile へ変換し、追記用テキストを作成
+      - name: Convert to Textile
+        id: create_append_text
+        if: ${{ steps.extract_pr_text.outputs.textForRedmine != '' }}
+        uses: actions/github-script@v7
+        env:
+          TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.textForRedmine }}
+        with:
+          script: |
+            const { execFileSync } = require('child_process');
+            const input = process.env.TEXT_FOR_REDMINE;
 
-          remarks="null"
-          if [ -n "$APPEND_TEXT" ]; then
-            remarks=$(jq -n \
-              --arg number "$SAMPLE_NUMBER" \
-              --arg text "$NEW_TEXT" \
-              '[{ id: ($number | tonumber), value: $text }]')
-          fi
-          echo "status: $status, author: $author, remarks: $remarks"
-          
-          issue_update_body="$(jq -n \
-            --argjson status "$status" \
-            --argjson author "$author" \
-            --argjson remarks "$remarks" \
-            '
-            .issue = {status_id: $status}
-            | ( if $author != null
-                then .issue += { assigned_to_id: $author }
-                else .
-              end )
-            | ( if $remarks != null
-                then .issue += { custom_fields: $remarks }
-                else .
-              end )
-            ')"
-          echo "issue_update_body: $issue_update_body"      
-        done
+            // Pandoc 実行（GFM → Textile）
+            let converted = '';
+            try {
+              converted = execFileSync('pandoc', [
+                '--sandbox',
+                '--from', 'gfm-raw_html+hard_line_breaks',
+                '--to', 'textile',
+                '--wrap', 'none'
+              ], { input, encoding: 'utf8' });
+            } catch (e) {
+              core.setFailed(`Markdown(GFM）→Textileへの変換に失敗: ${e.message}`);
+              return;
+            }
+
+            core.info(`Converted PR text: ${converted}`);
+
+            // UTC 日付のヘッダを付与
+            const d = new Date();
+            const Y = d.getUTCFullYear();
+            const M = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const D = String(d.getUTCDate()).padStart(2, '0');
+            const header = `> 【${Y}/${M}/${D}】↓自動記入`;
+
+            const newText = `${header}\n${converted}`;
+            core.info(`NewText: ${newText}`);
+            core.setOutput('newText', newText);
+
+      # Redmine に送る JSON を構築
+      - name: Update Redmine Issues
+        if: ${{ steps.extract_issue_ids.outputs.issueIds != '' }}
+        uses: actions/github-script@v7
+        env:
+          ISSUE_IDS: ${{ steps.extract_issue_ids.outputs.issueIds }}
+          APPEND_TEXT: ${{ steps.create_append_text.outputs.newText }}
+          SAMPLE_NUMBER: ${{ env.SAMPLE_NUMBER }}
+        with:
+          script: |
+            const issueIds = JSON.parse(process.env.ISSUE_IDS);
+            const appendText = process.env.APPEND_TEXT || '';
+            const sampleNumber = Number(process.env.SAMPLE_NUMBER || 0);
+
+            const action = context.payload.action;
+            const status = action === 'opened' ? 0 : 1;
+            const author = action === 'opened' ? null : 222;
+
+            for (const issueId of issueIds) {
+              // 既存テキスト（必要ならここで Redmine API から取得して originalText に入れる）
+              const originalText = '';
+              const newText = originalText
+                ? `${originalText}\n\n${appendText}`
+                : appendText;
+
+              // remarks（custom_fields）は APPEND_TEXT があれば配列を生成、なければ null
+              const remarks = appendText
+                ? [{ id: sampleNumber, value: newText }]
+                : null;
+
+              const body = { issue: { status_id: status } };
+              if (author !== null)
+                body.issue.assigned_to_id = author;
+              if (remarks !== null) 
+                body.issue.custom_fields = remarks;
+
+              core.info(`ISSUE_ID: ${issueId}`);
+              core.info('issue_update_body:\n' + JSON.stringify(body, null, 2));
+
+              // 実際に Redmine API を叩く場合の例（必要ならコメントアウト解除）
+              // await github.request('PUT https://your-redmine.example.com/issues/{id}.json', {
+              //   id: issueId,
+              //   data: body,
+              //   headers: {
+              //     'Content-Type': 'application/json',
+              //     'X-Redmine-API-Key': process.env.REDMINE_API_KEY
+              //   }
+              // });
+            }
