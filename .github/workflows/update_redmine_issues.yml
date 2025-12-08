@@ -30,14 +30,14 @@ jobs:
               .filter(id => id != '');
             
             core.info(`issueIds: ${issueIds}`);
-            core.setOutput('issueIds', JSON.stringify(issueIds));
+            core.setOutput('issue_ids', JSON.stringify(issueIds));
             if (issueIds.length <= 0) {
               core.notice('PRタイトルにチケット番号が含まれていません。後続ジョブをスキップします。');
             }
 
   update_redmine_issues:
     needs: [extract_issue_ids]
-    if: ${{ needs.extract_issue_ids.outputs.issueIds != '' }}
+    if: ${{ fromJSON(needs.extract_issue_ids.outputs.issue_ids).length > 0 }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
