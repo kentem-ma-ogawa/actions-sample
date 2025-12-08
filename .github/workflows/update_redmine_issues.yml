@@ -1,5 +1,5 @@
 
-name: Update Redmine Issues
+name: Update Redmine Issue
 
 on:
   pull_request:
@@ -12,39 +12,59 @@ jobs:
   update-redmine-issues:
     if: >
       (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     timeout-minutes: 5
-    container: ghcr.io/pandoc/core:3.8 # ← Pandoc入りで setup不要
+
     steps:
-      - name: Update Redmine Issues
-        uses: actions/github-script@v7      
-        env:
-          SAMPLE_NUMBER: ${{ secrets.SAMPLE_NUMBER }}
+      # PRタイトルからRedmineのissueIdを抽出
+      - name: Extract Redmine Issue IDs
+        id: extract_issue_ids
+        uses: actions/github-script@v7
         with:
-          script: | 
-            const core = require('@actions/core');
-            const pr = context.payload.pull_request || {};
-            const title = pr.title || '';
+          script: |
+            const title = context.payload.pull_request?.title || '';
             // "Redmine12345…" のようなテキストからチケット番号を抽出
-            const issueIds = [...title.matchAll(/Redmine\s*(\d+)/gi)]
-              .map(match => match?.[1] ?? '')
-              .filter(id => id != '');
+            const matches = [...title.matchAll(/Redmine\s*(\d+)/gi)];
+            const issueIds = matches.map(match => match[1]);
             
             core.info(`issueIds: ${issueIds}`);
+            core.setOutput('issueIds', JSON.stringify(issueIds));
             if (issueIds.length <= 0) {
-              core.notice('PRタイトルにチケット番号が含まれていません。');
-              return;
+            // ★FailedではなくSkipさせたい（後続ジョブでスキップさせるしかないみたい）
+              core.setFailed('PRタイトルにチケット番号が含まれていません。');
             }
 
-            # PR本文から <!-- Redmine: Start --> … <!-- Redmine: End --> の範囲を抽出
-            const prBody  = pr.body  || '';
+      # PR本文から <!-- Redmine: Start --> … <!-- Redmine: End --> の範囲を抽出
+      - name: Extract PR Text
+        id: extract_pr_text
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request?.body || '';
             const redmineFiledRegex = /<!--\s*Redmine\s*:\s*Start\s*-->([\s\S]*?)<!--\s*Redmine\s*:\s*End\s*-->/i;
-            const match = prBody.match(redmineFiledRegex);
-            const textForRedmine = match?.[1] ?? '';
+            const match = body.match(redmineFiledRegex);
+            const textForRedmine = match[1];
+
             core.info(`Text for redmine: ${textForRedmine}`);
-            
-            # 抽出テキストを Pandoc で Textile へ変換し、追記用テキストを作成
+            core.setOutput('textForRedmine', textForRedmine);
+
+      # Pandoc をセットアップ
+      - name: Setup Pandoc
+        uses: pandoc/actions/setup@v1
+        with:
+          version: 3.8
+          
+      # 抽出テキストを Pandoc で Textile へ変換し、追記用テキストを作成
+      - name: Convert to Textile
+        id: create_append_text
+        if: ${{ steps.extract_pr_text.outputs.textForRedmine != '' }}
+        uses: actions/github-script@v7
+        env:
+          TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.textForRedmine }}
+        with:
+          script: |
             const { execFileSync } = require('child_process');
+            const input = process.env.TEXT_FOR_REDMINE;
 
             // Pandoc 実行（GFM → Textile）
             let converted = '';
@@ -54,11 +74,12 @@ jobs:
                 '--from', 'gfm-raw_html+hard_line_breaks',
                 '--to', 'textile',
                 '--wrap', 'none'
-              ], { input: textForRedmine, encoding: 'utf8' });
+              ], { input, encoding: 'utf8' });
             } catch (e) {
               core.setFailed(`Markdown(GFM）→Textileへの変換に失敗: ${e.message}`);
               return;
             }
+
             core.info(`Converted PR text: ${converted}`);
 
             // UTC 日付のヘッダを付与
@@ -66,12 +87,26 @@ jobs:
             const Y = d.getUTCFullYear();
             const M = String(d.getUTCMonth() + 1).padStart(2, '0');
             const D = String(d.getUTCDate()).padStart(2, '0');
-            const header = `> 【${Y}/${M}/${D}】プルリクの内容を自動記入`;
+            const header = `> 【${Y}/${M}/${D}】↓自動記入`;
 
-            const appendText = `${header}\n${converted}`;
-            core.info(`AppendText: ${appendText}`);
+            const newText = `${header}\n${converted}`;
+            core.info(`NewText: ${newText}`);
+            core.setOutput('newText', newText);
 
+      # Redmine に送る JSON を構築
+      - name: Update Redmine Issues
+        if: ${{ steps.extract_issue_ids.outputs.issueIds != '' }}
+        uses: actions/github-script@v7
+        env:
+          ISSUE_IDS: ${{ steps.extract_issue_ids.outputs.issueIds }}
+          APPEND_TEXT: ${{ steps.create_append_text.outputs.newText }}
+          SAMPLE_NUMBER: ${{ env.SAMPLE_NUMBER }}
+        with:
+          script: |
+            const issueIds = JSON.parse(process.env.ISSUE_IDS);
+            const appendText = process.env.APPEND_TEXT || '';
             const sampleNumber = Number(process.env.SAMPLE_NUMBER || 0);
+
             const action = context.payload.action;
             const status = action === 'opened' ? 0 : 1;
             const author = action === 'opened' ? null : 222;
@@ -83,19 +118,19 @@ jobs:
                 ? `${originalText}\n\n${appendText}`
                 : appendText;
 
-              // remarks（custom_fields）は appendText があれば配列を生成、なければ null
+              // remarks（custom_fields）は APPEND_TEXT があれば配列を生成、なければ null
               const remarks = appendText
                 ? [{ id: sampleNumber, value: newText }]
                 : null;
 
-              const issueUpdateBody = { issue: { status_id: status } };
+              const body = { issue: { status_id: status } };
               if (author !== null)
-                issueUpdateBody.issue.assigned_to_id = author;
+                body.issue.assigned_to_id = author;
               if (remarks !== null) 
-                issueUpdateBody.issue.custom_fields = remarks;
+                body.issue.custom_fields = remarks;
 
               core.info(`ISSUE_ID: ${issueId}`);
-              core.info('issue_update_body:\n' + JSON.stringify(issueUpdateBody, null, 2));
+              core.info('issue_update_body:\n' + JSON.stringify(body, null, 2));
 
               // 実際に Redmine API を叩く場合の例（必要ならコメントアウト解除）
               // await github.request('PUT https://your-redmine.example.com/issues/{id}.json', {
