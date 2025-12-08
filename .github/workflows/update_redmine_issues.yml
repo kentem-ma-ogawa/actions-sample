@@ -38,7 +38,7 @@ jobs:
 
   update_redmine_issues:
     needs: [extract]
-    if: fromJSON(needs.extract.outputs.issue_ids || '[]').length > 0  
+    if: {{ fromJSON(needs.extract_issue_ids.outputs.issue_ids || '[]').length > 0 }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
@@ -105,10 +105,10 @@ jobs:
 
       # Redmine に送る JSON を構築
       - name: Update Redmine Issues
-        if: ${{ steps.extract_issue_ids.outputs.issueIds != '' }}
+        if: ${{ needs.extract.outputs.issue_ids != '' }}
         uses: actions/github-script@v7
         env:
-          ISSUE_IDS: ${{ steps.extract_issue_ids.outputs.issueIds }}
+          ISSUE_IDS: ${{ needs.extract.outputs.issue_ids }}
           APPEND_TEXT: ${{ steps.create_append_text.outputs.newText }}
           SAMPLE_NUMBER: ${{ env.SAMPLE_NUMBER }}
         with:
