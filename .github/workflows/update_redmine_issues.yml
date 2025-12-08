@@ -12,9 +12,9 @@ jobs:
   update-redmine-issues:
     if: >
       (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 5
-    container: ghcr.io/pandoc/core:3.8  # ← Pandoc入りで setup不要
+    container: ghcr.io/pandoc/core:3.8
     steps:
       - name: Update Redmine Issues
         uses: actions/github-script@v7      
@@ -22,10 +22,13 @@ jobs:
           SAMPLE_NUMBER: ${{ secrets.SAMPLE_NUMBER }}
         with:
           script: | 
+            const core = require('@actions/core');
             const pr = context.payload.pull_request || {};
             const title = pr.title || '';
             // "Redmine12345…" のようなテキストからチケット番号を抽出
-            const issueIds = [...title.matchAll(/Redmine\s*(\d+)/gi)].map(match => match?.[1] ?? '').filter(id => id != '');
+            const issueIds = [...title.matchAll(/Redmine\s*(\d+)/gi)]
+              .map(match => match?.[1] ?? '')
+              .filter(id => id != '');
             
             core.info(`issueIds: ${issueIds}`);
             if (issueIds.length <= 0) {
@@ -34,9 +37,9 @@ jobs:
             }
 
             # PR本文から <!-- Redmine: Start --> … <!-- Redmine: End --> の範囲を抽出
-            const body  = pr.body  || '';
+            const prBody  = pr.body  || '';
             const redmineFiledRegex = /<!--\s*Redmine\s*:\s*Start\s*-->([\s\S]*?)<!--\s*Redmine\s*:\s*End\s*-->/i;
-            const match = body.match(redmineFiledRegex);
+            const match = prBody.match(redmineFiledRegex);
             const textForRedmine = match?.[1] ?? '';
             core.info(`Text for redmine: ${textForRedmine}`);
             
@@ -80,19 +83,19 @@ jobs:
                 ? `${originalText}\n\n${appendText}`
                 : appendText;
 
-              // remarks（custom_fields）は APPEND_TEXT があれば配列を生成、なければ null
+              // remarks（custom_fields）は appendText があれば配列を生成、なければ null
               const remarks = appendText
-                ? [{ id: sampleNumber, value: appendText }]
+                ? [{ id: sampleNumber, value: newText }]
                 : null;
 
-              const body = { issue: { status_id: status } };
+              const issueUpdateBody = { issue: { status_id: status } };
               if (author !== null)
-                body.issue.assigned_to_id = author;
+                issueUpdateBody.issue.assigned_to_id = author;
               if (remarks !== null) 
-                body.issue.custom_fields = remarks;
+                issueUpdateBody.issue.custom_fields = remarks;
 
               core.info(`ISSUE_ID: ${issueId}`);
-              core.info('issue_update_body:\n' + JSON.stringify(body, null, 2));
+              core.info('issue_update_body:\n' + JSON.stringify(issueUpdateBody, null, 2));
 
               // 実際に Redmine API を叩く場合の例（必要ならコメントアウト解除）
               // await github.request('PUT https://your-redmine.example.com/issues/{id}.json', {
