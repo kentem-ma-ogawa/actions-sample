@@ -103,7 +103,8 @@ jobs:
           SAMPLE_NUMBER: ${{ env.SAMPLE_NUMBER }}
         with:
           script: |
-            const issueIds = ISSUE_IDS;
+            core.info(process.env.ISSUE_IDS);
+            const issueIds = process.env.ISSUE_IDS;
             const appendText = process.env.APPEND_TEXT || '';
             const sampleNumber = Number(process.env.SAMPLE_NUMBER || 0);
 
