@@ -27,7 +27,7 @@ jobs:
         # ISSUE_IDSが空なら終了し、その後のstepsをスキップ 
         if [ -z "$ISSUE_IDS" ]; then
           echo "Skipping update: Not found redmine issue ids"
-          exit 1
+          exit 0
         fi
         echo "issue_ids=$ISSUE_IDS" >> $GITHUB_OUTPUT
     
