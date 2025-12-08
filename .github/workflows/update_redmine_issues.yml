@@ -9,12 +9,13 @@ env:
   SAMPLE_NUMBER: ${{ secrets.SAMPLE_NUMBER }}
 
 jobs:
-  update-redmine-issues:
+  extract_issue_ids:
     if: >
       (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
     runs-on: ubuntu-slim
-    timeout-minutes: 5
-
+    timeout-minutes: 1
+    outputs:
+      issue_ids: ${{ steps.extract.outputs.issue_ids }}
     steps:
       # PRタイトルからRedmineのissueIdを抽出
       - name: Extract Redmine Issue IDs
@@ -30,10 +31,15 @@ jobs:
             core.info(`issueIds: ${issueIds}`);
             core.setOutput('issueIds', JSON.stringify(issueIds));
             if (issueIds.length <= 0) {
-            // ★FailedではなくSkipさせたい（後続ジョブでスキップさせるしかないみたい）
-              core.setFailed('PRタイトルにチケット番号が含まれていません。');
+              core.notice('PRタイトルにチケット番号が含まれていません。後続ジョブをスキップします。');
             }
 
+  update_redmine_issues:
+    needs: [extract_issue_ids]
+    if: ${{ fromJSON(needs.extract_issue_ids.outputs.issueIds).length > 0 }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    steps:
       # PR本文から <!-- Redmine: Start --> … <!-- Redmine: End --> の範囲を抽出
       - name: Extract PR Text
         id: extract_pr_text
