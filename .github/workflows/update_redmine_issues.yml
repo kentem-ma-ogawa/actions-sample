@@ -33,7 +33,7 @@ jobs:
     
     # PR本文からテキストを抽出し、PandocでTexileに変換
     - name: Setup Pandoc
-        uses: pandoc/actions/setup@v1
+      uses: pandoc/actions/setup@v1
       with:
         version: 3.8
 
