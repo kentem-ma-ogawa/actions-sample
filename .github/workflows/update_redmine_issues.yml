@@ -12,6 +12,8 @@ jobs:
   update-redmine-issues:
     if: >
       (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
+    # 例：Pandoc 3.8 公式イメージ
+    container: ghcr.io/pandoc/core:3.8
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -47,12 +49,6 @@ jobs:
 
             core.info(`Text for redmine: ${textForRedmine}`);
             core.setOutput('textForRedmine', textForRedmine);
-
-      # Pandoc をセットアップ
-      - name: Setup Pandoc
-        uses: pandoc/actions/setup@v1
-        with:
-          version: 3.8
 
       # 抽出テキストを Pandoc で Textile へ変換し、追記用テキストを作成
       - name: Convert to Textile
