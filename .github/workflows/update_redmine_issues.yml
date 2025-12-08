@@ -25,14 +25,14 @@ jobs:
           script: |
             const title = context.payload.pull_request?.title || '';
             // "Redmine12345…" のようなテキストからチケット番号を抽出
-            const matches = [...title.matchAll(/Redmine\s*(\d+)/gi)];
-            const issueIds = matches.map(match => match[1]);
+            const issueIds = [...title.matchAll(/Redmine\s*(\d+)/gi)]
+              .map(match => match?.[1] ?? '')
+              .filter(id => id != '');
             
             core.info(`issueIds: ${issueIds}`);
             core.setOutput('issueIds', JSON.stringify(issueIds));
             if (issueIds.length <= 0) {
               core.notice('PRタイトルにチケット番号が含まれていません。後続ジョブをスキップします。');
-              core.notice(JSON.stringify(issueIds));
             }
 
   update_redmine_issues:
