@@ -63,10 +63,9 @@ jobs:
     #抽出したテキストをPandocでTexileに変換し、追記するテキストを作成
     - name: Convert to Textile 
       id: create_append_text
-      if: ${{ steps.extract_issue_ids.outputs.issue_ids != '' }}
       env:
         TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.pr_text }}
-      if: ${{ steps.extract_pr_text.outputs.pr_text != '' }}
+      if: ${{ steps.extract_issue_ids.outputs.issue_ids != '' }} &&${{ steps.extract_pr_text.outputs.pr_text != '' }}
       run: |
         CONVERTED_PR_TEXT=$(printf '%s' "$TEXT_FOR_REDMINE" \
           | pandoc --sandbox --from=gfm-raw_html+hard_line_breaks --to=textile --wrap=none)
