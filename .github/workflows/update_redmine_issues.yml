@@ -78,7 +78,10 @@ jobs:
           # 現在記入されているテキストを取得
           ORIGINAL_TEXT=""
 
-          # 既存テキストと結合
-          NEW_TEXT="${ORIGINAL_TEXT:+${ORIGINAL_TEXT}"$'\n\n'}$APPEND_TEXT"
-
+          # 既存テキストと結合          
+          if [[ -n "$ORIGINAL_TEXT" ]]; then
+            NEW_TEXT="$ORIGINAL_TEXT"$'\n\n'"$APPEND_TEXT"
+          else
+            NEW_TEXT="$APPEND_TEXT"
+          fi
         done
