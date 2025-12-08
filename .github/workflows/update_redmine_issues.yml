@@ -11,7 +11,7 @@ env:
 jobs:
   extract:
     if: >
-      (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
+      (contains(fromJSON('["redmine", "bugfix"]'), github.head_ref))
     runs-on: ubuntu-slim
     timeout-minutes: 1
     outputs:
@@ -30,11 +30,12 @@ jobs:
               .filter(id => id != '');
             
             core.info(`issueIds: ${issueIds}`);
-            core.setOutput('issue_ids', JSON.stringify(issueIds));
+            //core.setOutput('issue_ids', JSON.stringify(issueIds));
             if (issueIds.length <= 0) {
               core.notice('PRタイトルにチケット番号が含まれていません。後続ジョブをスキップします。');
               core.info(JSON.stringify(issueIds));
             }
+            return issueIds;
 
   update_redmine_issues:
     needs: [extract]
@@ -56,7 +57,7 @@ jobs:
             const textForRedmine = match[1];
 
             core.info(`Text for redmine: ${textForRedmine}`);
-            core.setOutput('textForRedmine', textForRedmine);
+            return textForRedmine;
 
       # Pandoc をセットアップ
       - name: Setup Pandoc
@@ -101,7 +102,7 @@ jobs:
 
             const newText = `${header}\n${converted}`;
             core.info(`NewText: ${newText}`);
-            core.setOutput('newText', newText);
+            return newText;
 
       # Redmine に送る JSON を構築
       - name: Update Redmine Issues
