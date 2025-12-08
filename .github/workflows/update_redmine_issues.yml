@@ -33,7 +33,6 @@ jobs:
             core.setOutput('issue_ids', JSON.stringify(issueIds));
             if (issueIds.length <= 0) {
               core.notice('PRタイトルにチケット番号が含まれていません。後続ジョブをスキップします。');
-              core.notice(JSON.stringify(issueIds));
             }
 
   update_redmine_issues:
