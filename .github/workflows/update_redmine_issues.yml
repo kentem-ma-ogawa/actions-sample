@@ -37,7 +37,7 @@ jobs:
 
   update_redmine_issues:
     needs: [extract_issue_ids]
-    if: ${{ needs.extract_issue_ids.outputs.issueIds != '[]' }}
+    if: ${{ needs.extract_issue_ids.outputs.issueIds != '' }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
