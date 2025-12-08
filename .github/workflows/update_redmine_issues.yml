@@ -81,33 +81,4 @@ jobs:
           # 既存テキストと結合
           NEW_TEXT="${ORIGINAL_TEXT:+${ORIGINAL_TEXT}"$'\n\n'}$APPEND_TEXT"
 
-          remarks=""
-          if [ "${{ github.event.action }}" = "opened" ]; then
-            status="0"
-            author=""
-          else
-            status="1"
-            author="222"
-
-            if [ -n "$APPEND_TEXT" ]; then
-              remarks=$(jq -n \
-                --arg number "$SAMPLE_NUMBER" \
-                --arg text "$NEW_TEXT" \
-                '[{ id: ($number | tonumber), value: $text }]')
-            fi
-          fi
-          echo "status: $status, author: $author, remarks: $remarks"
-          
-          issue_update_body=$(jq -n \
-            --argjson status "$status" \
-            --argjson author "${author:-null}" \
-            --argjson remarks "${remarks:-null}" \
-            '{
-              issue: {
-                status_id: $status
-              }
-              + (if $author != null then {assigned_to_id: $author} else {} end)
-              + (if $remarks != null then {custom_fields: $remarks} else {} end)
-            }')
-          echo "issue_update_body: $issue_update_body"
         done
