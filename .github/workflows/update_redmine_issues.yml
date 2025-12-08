@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 5
     steps:
     - name: Extract Redmine Issue IDs
-      id: extract   
+      id: extract_issue_ids   
       env:
         PR_TITLE: ${{ github.event.pull_request.title }}
       run: |      
@@ -31,14 +31,9 @@ jobs:
         fi
         echo "issue_ids=$ISSUE_IDS" >> $GITHUB_OUTPUT
     
-    # PR本文からテキストを抽出し、PandocでTexileに変換
-    - name: Setup Pandoc
-      uses: pandoc/actions/setup@v1
-      with:
-        version: 3.8
-
-    - name: Extract PR Text and Convert to Textile 
-      id: create_append_text
+    # PR本文からテキストを抽出する
+    - name: Extract PR Text 
+      id: extract_pr_text
       env:
         PR_BODY: ${{ github.event.pull_request.body }}
       run: |
@@ -48,12 +43,21 @@ jobs:
           flag
         ')
         echo "Text for redmine: $TEXT_FOR_REDMINE"
+        echo "pr_text=$TEXT_FOR_REDMINE >> $GITHUB_OUTPUT"
+   
+    # Pandocをセットアップ
+    - name: Setup Pandoc
+      uses: pandoc/actions/setup@v1
+      with:
+        version: 3.8
         
-        if [ -z "$TEXT_FOR_REDMINE" ]; then
-          echo "new_text=" >> $GITHUB_OUTPUT
-          exit 0
-        fi
-        
+    #抽出したテキストをPandocでTexileに変換し、追記するテキストを作成
+    - name: Convert to Textile 
+      id: create_append_text
+      env:
+        TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.pr_text }}
+      if: env.TEXT_FOR_REDMINE != ""
+      run: |
         CONVERTED_PR_TEXT=$(printf '%s' "$TEXT_FOR_REDMINE" \
           | pandoc --sandbox --from=gfm-raw_html+hard_line_breaks --to=textile --wrap=none)
         echo "Converted PR text: $CONVERTED_PR_TEXT"
@@ -74,7 +78,7 @@ jobs:
       env:
         APPEND_TEXT: ${{ steps.create_append_text.outputs.new_text }}
       run: |
-        for ISSUE_ID in ${{ steps.extract.outputs.issue_ids }}; do    
+        for ISSUE_ID in ${{ steps.extract_issue_ids.outputs.issue_ids }}; do    
           # 現在記入されているテキストを取得
           ORIGINAL_TEXT=""
 
