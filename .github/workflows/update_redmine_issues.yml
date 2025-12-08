@@ -34,6 +34,7 @@ jobs:
     # PR本文からテキストを抽出する
     - name: Extract PR Text 
       id: extract_pr_text
+      if: ${{ steps.extract_issue_ids.outputs.issue_ids != '' }}
       env:
         PR_BODY: ${{ github.event.pull_request.body }}
       run: |
@@ -54,6 +55,7 @@ jobs:
    
     # Pandocをセットアップ
     - name: Setup Pandoc
+      if: ${{ steps.extract_issue_ids.outputs.issue_ids != '' }}
       uses: pandoc/actions/setup@v1
       with:
         version: 3.8
@@ -61,6 +63,7 @@ jobs:
     #抽出したテキストをPandocでTexileに変換し、追記するテキストを作成
     - name: Convert to Textile 
       id: create_append_text
+      if: ${{ steps.extract_issue_ids.outputs.issue_ids != '' }}
       env:
         TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.pr_text }}
       if: ${{ steps.extract_pr_text.outputs.pr_text != '' }}
@@ -81,6 +84,7 @@ jobs:
         } >> "$GITHUB_OUTPUT"
 
     - name: Update Redmine Issues
+      if: ${{ steps.extract_issue_ids.outputs.issue_ids != '' }}
       shell: bash
       env:
         APPEND_TEXT: ${{ steps.create_append_text.outputs.new_text }}
