@@ -23,16 +23,18 @@ jobs:
         with:
           script: |
             const title = context.payload.pull_request?.title || '';
-            // "Redmine12345" のような表記から数値部分（issueId）を抽出
+            // "Redmine12345…" のようなテキストからチケット番号を抽出
             const matches = [...title.matchAll(/Redmine\s*(\d+)/gi)];
             const issueIds = matches.map(match => match[1]);
-            // 出力（空なら空文字）
-            core.setOutput('issueIds', issueIds.join(' '));
-            if (issueIds.length === 0) {
-              core.notice('Skipping update: Not found redmine issue ids');
+            
+            core.info(`issueIds: ${issueIds}`);
+            core.setOutput('issueIds', JSON.stringify(issueIds));
+            if (issueIds.length <= 0) {
+            // ★FailedではなくSkipさせたい（後続ジョブでスキップさせるしかないみたい）
+              core.setFailed('PRタイトルにチケット番号が含まれていません。');
             }
 
-      # PR 本文から <!-- Redmine: Start --> ～ <!-- Redmine: End --> の範囲を抽出（両表記に対応）
+      # PR本文から <!-- Redmine: Start --> … <!-- Redmine: End --> の範囲を抽出
       - name: Extract PR Text
         id: extract_pr_text
         uses: actions/github-script@v7
@@ -55,7 +57,7 @@ jobs:
       # 抽出テキストを Pandoc で Textile へ変換し、追記用テキストを作成
       - name: Convert to Textile
         id: create_append_text
-        if: ${{ steps.extract_pr_text.outputs.pr_text != '' }}
+        if: ${{ steps.extract_pr_text.outputs.textForRedmine != '' }}
         uses: actions/github-script@v7
         env:
           TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.textForRedmine }}
@@ -74,11 +76,11 @@ jobs:
                 '--wrap', 'none'
               ], { input, encoding: 'utf8' });
             } catch (e) {
-              core.setFailed(`Pandoc conversion failed: ${e.message}`);
+              core.setFailed(`Markdown(GFM）→Textileへの変換に失敗: ${e.message}`);
               return;
             }
 
-            core.info('Converted PR text:' + converted);
+            core.info(`Converted PR text: ${converted}`);
 
             // UTC 日付のヘッダを付与
             const d = new Date();
@@ -88,19 +90,20 @@ jobs:
             const header = `> 【${Y}/${M}/${D}】↓自動記入`;
 
             const newText = `${header}\n${converted}`;
+            core.info(`NewText: ${newText}`);
             core.setOutput('newText', newText);
 
       # Redmine に送る JSON を構築
       - name: Update Redmine Issues
-        if: ${{ steps.extract_issue_ids.outputs.issue_ids != '' }}
+        if: ${{ steps.extract_issue_ids.outputs.issueIds != '' }}
         uses: actions/github-script@v7
         env:
-          ISSUE_IDS: ${{ steps.extract_issue_ids.outputs.issue_ids }}
+          ISSUE_IDS: ${{ steps.extract_issue_ids.outputs.issueIds }}
           APPEND_TEXT: ${{ steps.create_append_text.outputs.newText }}
           SAMPLE_NUMBER: ${{ env.SAMPLE_NUMBER }}
         with:
           script: |
-            const issueIds = (process.env.ISSUE_IDS).trim().split(/\s+/).filter(Boolean);
+            const issueIds = fromJSON(process.env.ISSUE_IDS);
             const appendText = process.env.APPEND_TEXT || '';
             const sampleNumber = Number(process.env.SAMPLE_NUMBER || 0);
 
