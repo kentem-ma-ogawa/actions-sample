@@ -69,14 +69,17 @@ jobs:
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
 
-    - name: Update Redmine Issues     
+    - name: Update Redmine Issues
+      shell: bash
+      env:
+        APPEND_TEXT: ${{ steps.create_append_text.outputs.new_text }}
       run: |
         for ISSUE_ID in ${{ steps.extract.outputs.issue_ids }}; do    
           # 現在記入されているテキストを取得
           ORIGINAL_TEXT=""
 
           # 既存テキストと結合
-          NEW_TEXT="${ORIGINAL_TEXT:+${ORIGINAL_TEXT}"$'\n\n'}${{ steps.create_append_text.outputs.new_text }}"
+          NEW_TEXT="${ORIGINAL_TEXT:+${ORIGINAL_TEXT}"$'\n\n'}$APPEND_TEXT"
 
           remarks=""
           if [ "${{ github.event.action }}" = "opened" ]; then
@@ -84,9 +87,9 @@ jobs:
             author=""
           else
             status="1"
-            author="000"
+            author="222"
 
-            if [ -n "${{ steps.create_append_text.outputs.new_text }}" ]; then
+            if [ -n "$APPEND_TEXT" ]; then
               remarks=$(jq -n \
                 --arg number "$SAMPLE_NUMBER" \
                 --arg text "$NEW_TEXT" \
