@@ -12,11 +12,43 @@ jobs:
     if: >
       (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
     runs-on: ubuntu-latest
-    timeout-minutes: 3  # 5分→3分に短縮
+    timeout-minutes: 3
 
     steps:
-      # 全処理を1つのステップに統合して高速化
+      # PRの情報を事前チェック（Pandocが必要かどうか判定）
+      - name: Check PR content
+        id: check_content
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = context.payload.pull_request?.title || '';
+            const body = context.payload.pull_request?.body || '';
+            
+            // チケット番号の確認
+            const matches = [...title.matchAll(/Redmine\s*(\d+)/gi)];
+            const hasIssueIds = matches.length > 0;
+            
+            // Redmine範囲の確認
+            const redmineFiledRegex = /<!--\s*Redmine\s*:\s*Start\s*-->([\s\S]*?)<!--\s*Redmine\s*:\s*End\s*-->/i;
+            const hasRedmineText = redmineFiledRegex.test(body);
+            
+            core.setOutput('hasIssueIds', hasIssueIds);
+            core.setOutput('needsPandoc', hasRedmineText);
+            
+            if (!hasIssueIds) {
+              core.notice('PRタイトルにチケット番号が含まれていません。');
+            }
+
+      # Pandocを条件付きでセットアップ（テキスト変換が必要な場合のみ）
+      - name: Setup Pandoc
+        if: steps.check_content.outputs.needsPandoc == 'true'
+        uses: pandoc/actions/setup@v1
+        with:
+          version: 3.8
+
+      # メイン処理
       - name: Process PR and Update Redmine
+        if: steps.check_content.outputs.hasIssueIds == 'true'
         uses: actions/github-script@v7
         env:
           SAMPLE_NUMBER: ${{ env.SAMPLE_NUMBER }}
@@ -32,11 +64,6 @@ jobs:
             const issueIds = matches.map(match => match[1]);
             
             core.info(`issueIds: ${issueIds}`);
-            
-            if (issueIds.length <= 0) {
-              core.notice('PRタイトルにチケット番号が含まれていません。処理をスキップします。');
-              return; // Failedではなく正常終了
-            }
 
             // ========================================
             // 2. PR本文から Redmine範囲を抽出
@@ -54,7 +81,7 @@ jobs:
             let newText = '';
             
             if (textForRedmine) {
-              // Pandocで変換（既にubuntu-latestにインストール済み）
+              // Pandocで変換
               let converted = '';
               try {
                 converted = execFileSync('pandoc', [
@@ -65,7 +92,7 @@ jobs:
                 ], { input: textForRedmine, encoding: 'utf8' });
               } catch (e) {
                 core.warning(`Markdown→Textile変換に失敗: ${e.message}`);
-                // 変換失敗でも処理を継続
+                // 変換失敗の場合は元のテキストを使用
                 converted = textForRedmine;
               }
 
