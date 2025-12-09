@@ -36,6 +36,7 @@ jobs:
       # PR本文から <!-- Redmine: Start --> … <!-- Redmine: End --> の範囲を抽出
       - name: Extract Redmine Text From PR
         id: extract_pr_text
+        if: ${{ github.event.action == 'closed' }}
         uses: actions/github-script@v7
         with:
           script: |
