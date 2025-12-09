@@ -111,9 +111,12 @@ jobs:
               : 1;
             const remarksId = 111;
             const appendText = process.env.APPEND_TEXT || '';
+            const merged = context.payload.action === 'closed';
+            
             core.info(`appendText: ${appendText}`);
             
             for (const issueId of issueIds) {
+              core.info(`issueId: ${issueId}`);
               const originalText = '';
 
               const newText = originalText
@@ -124,19 +127,20 @@ jobs:
               const remarks = appendText
                 ? [{ id: remarksId, value: newText }]
                 : [];
-
               core.info(`remarks: ${remarks}`);
 
-              const issue_update_body = { issue: { status_id: statusId } };
-              const authorId = 222;
-              if (authorId != null)
-                issue_update_body.issue.assigned_to_id = authorId;
+              const issueUpdateBody = { issue: { status_id: statusId } };
+              if (merged) {
+                const authorId = 222;
+                if (authorId != null)
+                  issue_update_body.issue.assigned_to_id = authorId;
                 
-              if (remarks.length > 0) 
-                issue_update_body.issue.custom_fields = remarks;
+                if (remarks.length > 0) 
+                  issue_update_body.issue.custom_fields = remarks;
+              }
 
-              core.info(`ISSUE_ID: ${issueId}`);
-              core.info(`issue_update_body: ${JSON.stringify(issue_update_body)}`);
+              const issueUpdateBodyJson = JSON.stringify(issueUpdateBody):
+              core.info(`issueUpdateBody: ${issueUpdateBodyJson}`);
             }
 
             
