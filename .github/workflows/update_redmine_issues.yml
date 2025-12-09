@@ -37,6 +37,10 @@ jobs:
               return null;
             }
             return JSON.stringify(issueIds);
+      - name: Check
+        with:
+          script: |
+          core.info(`result: ${steps.extract.outputs.result}`);
 
   update_redmine_issues:
     needs: [extract]
