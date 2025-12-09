@@ -31,6 +31,7 @@ jobs:
             if (issueIds.length <= 0) {
               core.setFailed('PRタイトルにチケット番号が含まれていないため、Redmineの更新ができませんでした。');
             }
+            core.info(`issueIds: ${JSON.stringify(issueIds)}`);
             return JSON.stringify(issueIds);
 
   update_redmine_issues:
