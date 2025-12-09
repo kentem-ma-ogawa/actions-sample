@@ -127,10 +127,10 @@ jobs:
 
               const issue_update_body = { issue: { status_id: status } };
               if (author !== null)
-                body.issue.assigned_to_id = author;
+                issue_update_body.issue.assigned_to_id = author;
                 
               if (remarks !== null) 
-                body.issue.custom_fields = remarks;
+                issue_update_body.issue.custom_fields = remarks;
 
               core.info(`ISSUE_ID: ${issueId}`);
               core.info(`issue_update_body: ${JSON.stringify(issue_update_body, null, 2)}`);
