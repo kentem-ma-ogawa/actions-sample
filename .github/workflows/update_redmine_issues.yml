@@ -30,7 +30,6 @@ jobs:
               core.setFailed('PRタイトルにチケット番号が含まれていないため、Redmineの更新ができませんでした。');
             }
             core.info(`issueIds: ${JSON.stringify(issueIds)}`);
-            core.setOutput('issue_ids', issueIds);
             return issueIds;
   
       # PR本文から <!-- Redmine: Start --> … <!-- Redmine: End --> の範囲を抽出
@@ -46,7 +45,6 @@ jobs:
 
             core.info(`Text for redmine: ${textForRedmine}`);
             return textForRedmine;
-            core.setOutput('text_for_redmine', textForRedmine);
 
       # Pandoc をセットアップ
       - name: Setup Pandoc
@@ -61,10 +59,8 @@ jobs:
         uses: actions/github-script@v7
         env:
           TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.result }}
-          TEXT_FOR_REDMINE2: ${{ steps.extract_pr_text.outputs.text_for_redmine }}
         with:
           script: |
-            core.info(`text_for_redmine:${process.env.TEXT_FOR_REDMINE2}`);
             core.info(`textForRedmine: ${process.env.TEXT_FOR_REDMINE}`);
             const { execFileSync } = require('child_process');
             const input = process.env.TEXT_FOR_REDMINE;
