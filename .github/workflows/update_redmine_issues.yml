@@ -30,7 +30,8 @@ jobs:
               core.setFailed('PRタイトルにチケット番号が含まれていないため、Redmineの更新ができませんでした。');
             }
             core.info(`issueIds: ${JSON.stringify(issueIds)}`);
-            return issueIds;
+            return JSON.stringify(issueIds);
+          result-encoding: string
   
       # PR本文から <!-- Redmine: Start --> … <!-- Redmine: End --> の範囲を抽出
       - name: Extract Redmine Text From PR
@@ -45,6 +46,7 @@ jobs:
 
             core.info(`Text for redmine: ${textForRedmine}`);
             return textForRedmine;
+          result-encoding: string
 
       # Pandoc をセットアップ
       - name: Setup Pandoc
@@ -89,6 +91,7 @@ jobs:
             const newText = `${header}\n${converted}`;
             core.info(`NewText: ${newText}`);
             return newText;
+          result-encoding: string
 
       # Redmine に送る JSON を構築
       - name: Update Redmine Issues
