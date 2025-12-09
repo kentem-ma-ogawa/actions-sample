@@ -114,7 +114,7 @@ jobs:
                 ? `${originalText}\r\n\r\n${appendText}`
                 : appendText;
 
-              remarks（custom_fields）は appendText が空でなければ作成
+              // remarks（custom_fields）は appendText が空でなければ作成
               const remarks = appendText
                 ? [{ id: remarksId, value: newText }]
                 : [];
