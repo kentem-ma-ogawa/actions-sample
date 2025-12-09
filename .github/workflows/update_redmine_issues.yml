@@ -38,6 +38,7 @@ jobs:
             }
             return JSON.stringify(issueIds);
       - name: Check
+        uses: actions/github-script@v7
         with:
           script: |
           core.info(`result: ${steps.extract.outputs.result}`);
