@@ -48,7 +48,7 @@ jobs:
             const body = context.payload.pull_request?.body || '';
             const redmineFieldRegex = /<!--\s*Redmine\s*:\s*Start\s*-->([\s\S]*?)<!--\s*Redmine\s*:\s*End\s*-->/i;
             const match = body.match(redmineFieldRegex);
-            const textForRedmine = match[1];
+            const textForRedmine = match?.[1] ?? '';
 
             core.info(`Text for redmine: ${textForRedmine}`);
             return textForRedmine;
@@ -125,7 +125,7 @@ jobs:
                 ? [{ id: sampleNumber, value: newText }]
                 : null;
 
-              const body = { issue: { status_id: status } };
+              const issue_update_body = { issue: { status_id: status } };
               if (author !== null)
                 body.issue.assigned_to_id = author;
                 
@@ -133,15 +133,15 @@ jobs:
                 body.issue.custom_fields = remarks;
 
               core.info(`ISSUE_ID: ${issueId}`);
-              core.info(`issue_update_body: ${JSON.stringify(body, null, 2)}`);
+              core.info(`issue_update_body: ${JSON.stringify(issue_update_body, null, 2)}`);
 
               // 実際に Redmine API を叩く場合の例（必要ならコメントアウト解除）
-              // await github.request('PUT https://your-redmine.example.com/issues/{id}.json', {
-              //   id: issueId,
-              //   data: body,
+              // await fetch('https://your-redmine.example.com/issues/{id}.json', {
+              //   method: 'PUT',
               //   headers: {
               //     'Content-Type': 'application/json',
               //     'X-Redmine-API-Key': process.env.REDMINE_API_KEY
-              //   }
+              //   },
+              //   body: JSON.stringify(${JSON.stringify(issue_update_body, null, 2)}),
               // });
             }
