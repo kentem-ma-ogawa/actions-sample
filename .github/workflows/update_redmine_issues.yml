@@ -139,7 +139,7 @@ jobs:
                   issue_update_body.issue.custom_fields = remarks;
               }
 
-              const issueUpdateBodyJson = JSON.stringify(issueUpdateBody):
+              const issueUpdateBodyJson = JSON.stringify(issueUpdateBody);
               core.info(`issueUpdateBody: ${issueUpdateBodyJson}`);
             }
 
