@@ -31,7 +31,7 @@ jobs:
             if (issueIds.length <= 0) {
               core.setFailed('PRタイトルにチケット番号が含まれていないため、Redmineの更新ができませんでした。');
             }
-            return issueIds;
+            return JSON.stringify(issueIds);
 
   update_redmine_issues:
     needs: extract_issue_ids
@@ -103,7 +103,7 @@ jobs:
           APPEND_TEXT: ${{ steps.create_append_text.outputs.result }}
         with:
           script: |
-            const issueIds = process.env.ISSUE_IDS;
+            const issueIds = JSON.parse(process.env.ISSUE_IDS);
             const appendText = process.env.APPEND_TEXT || '';
             const sampleNumber = Number(process.env.SAMPLE_NUMBER);
 
