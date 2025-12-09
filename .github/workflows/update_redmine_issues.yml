@@ -39,7 +39,7 @@ jobs:
 
   update_redmine_issues:
     needs: [extract]
-    
+    if: ${{ needs.extract.outputs.issue_ids !='' }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
@@ -49,8 +49,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            core.info(needs.extract.outputs.issue_ids);
-            core.info(fromJSON(needs.extract.outputs.issue_ids || '[]'));
             const body = context.payload.pull_request?.body || '';
             const redmineFiledRegex = /<!--\s*Redmine\s*:\s*Start\s*-->([\s\S]*?)<!--\s*Redmine\s*:\s*End\s*-->/i;
             const match = body.match(redmineFiledRegex);
@@ -68,10 +66,10 @@ jobs:
       # 抽出テキストを Pandoc で Textile へ変換し、追記用テキストを作成
       - name: Convert to Textile
         id: create_append_text
-        if: ${{ steps.extract_pr_text.outputs.textForRedmine != '' }}
+        if: ${{ steps.extract_pr_text.outputs.result != '' }}
         uses: actions/github-script@v7
         env:
-          TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.textForRedmine }}
+          TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.result }}
         with:
           script: |
             const { execFileSync } = require('child_process');
@@ -110,7 +108,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           ISSUE_IDS: ${{ needs.extract.outputs.issue_ids }}
-          APPEND_TEXT: ${{ steps.create_append_text.outputs.newText }}
+          APPEND_TEXT: ${{ steps.create_append_text.outputs.result }}
           SAMPLE_NUMBER: ${{ env.SAMPLE_NUMBER }}
         with:
           script: |
