@@ -98,7 +98,7 @@ jobs:
           APPEND_TEXT: ${{ steps.create_append_text.outputs.result }}
         with:
           script: |
-            core.info(`ISSUE_IDS: ${ISSUE_IDS`);
+            core.info(`ISSUE_IDS: ${ISSUE_IDS`});
             const issueIds = JSON.parse(process.env.ISSUE_IDS);
             const appendText = process.env.APPEND_TEXT || '';
             const sampleNumber = Number(process.env.SAMPLE_NUMBER);
