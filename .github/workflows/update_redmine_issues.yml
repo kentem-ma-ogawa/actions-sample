@@ -122,10 +122,11 @@ jobs:
               core.info(`remarks: ${remarks}`);
 
               const issue_update_body = { issue: { status_id: statusId } };
+              const authorId = 222;
               if (authorId != null)
                 issue_update_body.issue.assigned_to_id = authorId;
                 
-              if (remarks.length <= 0) 
+              if (remarks.length > 0) 
                 issue_update_body.issue.custom_fields = remarks;
 
               core.info(`ISSUE_ID: ${issueId}`);
