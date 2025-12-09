@@ -39,9 +39,11 @@ jobs:
             return JSON.stringify(issueIds);
       - name: Check
         uses: actions/github-script@v7
+        env:
+          RESULT: ${{ steps.extract.outputs.result }}
         with:
           script: |
-            core.info(`result: ${steps.extract.outputs.result}`);
+            core.info(`result: ${process.env.RESULT}`);
 
   update_redmine_issues:
     needs: [extract_issue_ids]
