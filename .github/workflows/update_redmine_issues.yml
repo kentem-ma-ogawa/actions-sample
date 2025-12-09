@@ -63,7 +63,6 @@ jobs:
           TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.result }}
         with:
           script: |
-            core.info(`textForRedmine: ${process.env.TEXT_FOR_REDMINE}`);
             const { execFileSync } = require('child_process');
             const input = process.env.TEXT_FOR_REDMINE;
 
@@ -109,7 +108,6 @@ jobs:
             const status = action === 'opened' ? 0 : 1;
             const author = action === 'opened' ? null : 222;
 
-            core.info(`issueIds: ${issueIds}`);
             for (const issueId of issueIds) {
               // 既存テキスト（必要ならここで Redmine API から取得して originalText に入れる）
               const originalText = '';
