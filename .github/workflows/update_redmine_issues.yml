@@ -46,6 +46,7 @@ jobs:
 
             core.info(`Text for redmine: ${textForRedmine}`);
             return textForRedmine;
+            core.setOutput('text_for_redmine', textForRedmine);
 
       # Pandoc をセットアップ
       - name: Setup Pandoc
@@ -62,6 +63,7 @@ jobs:
           TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.result }}
         with:
           script: |
+            core.info(`text_for_redmine:${steps.extract_pr_text.outputs.text_for_redmine}`);
             core.info(`textForRedmine: ${process.env.TEXT_FOR_REDMINE}`);
             const { execFileSync } = require('child_process');
             const input = process.env.TEXT_FOR_REDMINE;
