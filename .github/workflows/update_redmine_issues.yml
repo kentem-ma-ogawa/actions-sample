@@ -1,4 +1,3 @@
-
 name: Update Redmine Issue
 
 on:
@@ -29,21 +28,13 @@ jobs:
               .map(match => match?.[1] ?? '')
               .filter(id => id != '');
             
-            core.info(`issueIds: ${issueIds}`);
-            core.info(`issueIds_json: ${JSON.stringify(issueIds)}`);
-            //core.setOutput('issue_ids', JSON.stringify(issueIds));
             if (issueIds.length <= 0) {
-              core.notice('PRタイトルにチケット番号が含まれていません。後続ジョブをスキップします。');
-              return '';
+              core.setFailed('Redmineの更新に失敗: PRタイトルにチケット番号が含まれていない');
             }
-
-            core.info(`join: ${issueIds.join(',')}`);
             return issueIds.join(',');
-            //return JSON.stringify(issueIds);
 
   update_redmine_issues:
     needs: extract_issue_ids
-    if: ${{ needs.extract_issue_ids.outputs.issue_ids != '' }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
