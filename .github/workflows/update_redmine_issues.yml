@@ -111,7 +111,7 @@ jobs:
             const status = action === 'opened' ? 0 : 1;
             const author = action === 'opened' ? null : 222;
 
-            core.info(`issueIds: ${issueIds}`;
+            core.info(`issueIds: ${issueIds}`);
             for (const issueId of issueIds) {
               // 既存テキスト（必要ならここで Redmine API から取得して originalText に入れる）
               const originalText = '';
