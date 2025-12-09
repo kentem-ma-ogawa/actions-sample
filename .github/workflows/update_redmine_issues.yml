@@ -1,4 +1,4 @@
-name: Update Redmine Issue
+name: Update Redmine Issues
 
 on:
   pull_request:
@@ -62,7 +62,7 @@ jobs:
           TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.result }}
         with:
           script: |
-            core.info(`textForRedmine: ${textForRedmine}`);
+            core.info(`textForRedmine: ${process.env.TEXT_FOR_REDMINE}`);
             const { execFileSync } = require('child_process');
             const input = process.env.TEXT_FOR_REDMINE;
 
