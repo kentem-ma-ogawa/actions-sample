@@ -119,7 +119,7 @@ jobs:
                 ? [{ id: remarksId, value: newText }]
                 : [];
 
-              core.info(`remarks: ${remarks}`);
+              //core.info(`remarks: ${remarks}`);
 
               const issue_update_body = { issue: { status_id: statusId } };
               const authorId = 222;
@@ -129,7 +129,7 @@ jobs:
               if (remarks.length > 0) 
                 issue_update_body.issue.custom_fields = remarks;
 
-              core.info(`ISSUE_ID: ${issueId}`);
-              core.info(`issue_update_body: ${JSON.stringify(issue_update_body)}`);
+              //core.info(`ISSUE_ID: ${issueId}`);
+              //core.info(`issue_update_body: ${JSON.stringify(issue_update_body)}`);
 
             
