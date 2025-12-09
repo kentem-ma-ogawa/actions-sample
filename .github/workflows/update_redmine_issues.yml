@@ -36,11 +36,13 @@ jobs:
               core.notice('PRタイトルにチケット番号が含まれていません。後続ジョブをスキップします。');
               return null;
             }
-            return issueIds;
+
+            core.info(`join: ${issueIds.join(',')}`);
+            return issueIds.join(',');
             //return JSON.stringify(issueIds);
 
   update_redmine_issues:
-    needs: [extract_issue_ids]
+    needs: extract_issue_ids
     if: ${{ fromJSON(needs.extract_issue_ids.outputs.issue_ids).length > 0 }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
