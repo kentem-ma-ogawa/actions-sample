@@ -100,7 +100,8 @@ jobs:
               : 1;
             const remarksId = 111;
             const appendText = process.env.APPEND_TEXT || '';
-             
+            core.info(`appendText: ${appendText}`);
+            
             for (const issueId of issueIds) {
               const originalText = '';
 
