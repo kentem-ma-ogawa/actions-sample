@@ -61,9 +61,10 @@ jobs:
         uses: actions/github-script@v7
         env:
           TEXT_FOR_REDMINE: ${{ steps.extract_pr_text.outputs.result }}
+          TEXT_FOR_REDMINE2: ${{ steps.extract_pr_text.outputs.text_for_redmine }}
         with:
           script: |
-            core.info(`text_for_redmine:${steps.extract_pr_text.outputs.text_for_redmine}`);
+            core.info(`text_for_redmine:${process.env.TEXT_FOR_REDMINE2}`);
             core.info(`textForRedmine: ${process.env.TEXT_FOR_REDMINE}`);
             const { execFileSync } = require('child_process');
             const input = process.env.TEXT_FOR_REDMINE;
