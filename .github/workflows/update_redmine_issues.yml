@@ -13,8 +13,6 @@ jobs:
       (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
     runs-on: ubuntu-slim
     timeout-minutes: 1
-    outputs:
-      issue_ids: ${{ steps.extract.outputs.result }}
     steps:
       # PRタイトルからRedmineのissueIdを抽出
       - name: Extract Redmine Issue IDs
@@ -32,6 +30,7 @@ jobs:
               core.setFailed('PRタイトルにチケット番号が含まれていないため、Redmineの更新ができませんでした。');
             }
             core.info(`issueIds: ${JSON.stringify(issueIds)}`);
+            core.setOutput('issue_ids', issueIds);
             return issueIds.join();
 
   update_redmine_issues:
