@@ -8,15 +8,15 @@ env:
   SAMPLE_NUMBER: ${{ secrets.SAMPLE_NUMBER }}
 
 jobs:
-  extract_issue_ids:
+  update_redmine_issues:
     if: >
       (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
     runs-on: ubuntu-slim
-    timeout-minutes: 1
+    timeout-minutes: 5
     steps:
-      # PRタイトルからRedmineのissueIdを抽出
-      - name: Extract Redmine Issue IDs
-        id: extract
+      # PRタイトルからRedmineのIssueIdを抽出
+      - name: Extract Redmine Issue Ids
+        id: extract_issue_ids
         uses: actions/github-script@v7
         with:
           script: |
@@ -31,13 +31,8 @@ jobs:
             }
             core.info(`issueIds: ${JSON.stringify(issueIds)}`);
             core.setOutput('issue_ids', issueIds);
-            return issueIds.join();
-
-  update_redmine_issues:
-    needs: extract_issue_ids
-    runs-on: ubuntu-slim
-    timeout-minutes: 5
-    steps:
+            return JSON.stringify(issueIds);
+  
       # PR本文から <!-- Redmine: Start --> … <!-- Redmine: End --> の範囲を抽出
       - name: Extract Redmine Text From PR
         id: extract_pr_text
@@ -99,7 +94,7 @@ jobs:
       - name: Update Redmine Issues
         uses: actions/github-script@v7
         env:
-          ISSUE_IDS: ${{ needs.extract_issue_ids.outputs.issue_ids }}
+          ISSUE_IDS: ${{ steps.extract_issue_ids.outputs.result }}
           APPEND_TEXT: ${{ steps.create_append_text.outputs.result }}
         with:
           script: |
