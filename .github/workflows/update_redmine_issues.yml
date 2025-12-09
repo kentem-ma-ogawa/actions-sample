@@ -43,7 +43,10 @@ jobs:
             const redmineFieldRegex = /<!--\s*Redmine\s*:\s*Start\s*-->([\s\S]*?)<!--\s*Redmine\s*:\s*End\s*-->/i;
             const match = body.match(redmineFieldRegex);
             const textForRedmine = match?.[1] ?? '';
-
+            if (textForRedmine.trim() === '') {
+              textForRedmine = '';
+            }
+            
             core.info(`Text for redmine: ${textForRedmine}`);
             return textForRedmine;
           result-encoding: string
@@ -81,9 +84,17 @@ jobs:
               core.setFailed(`Markdown(GFM）→ Textileへの変換に失敗: ${e.message}`);
             }
             core.info(`Converted PR text: ${converted}`);
+            
+            // 日付ヘッダーを作成
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = (date.getDate()).toString().padStart(2, '0');
+            const header = `> 【${year}/${month}/${day}】プルリクの内容を自動記入`;
 
-            core.info(`ConvertedText: ${converted}`);
-            return converted;
+            const newText = `${header}\r\n${converted}`;
+            core.info(`NewText: ${newText}`);
+            return newText;
           result-encoding: string
 
       # Redmineを更新
@@ -105,15 +116,8 @@ jobs:
             for (const issueId of issueIds) {
               const originalText = '';
 
-              // 日付ヘッダーを作成
-              const date = new Date();
-              const year = date.getFullYear();
-              const month = (date.getMonth() + 1).toString().padStart(2, '0');
-              const day = (date.getDate()).toString().padStart(2, '0');
-              const header = `> 【${year}/${month}/${day}】プルリクの内容を自動記入`;
-
               const newText = originalText
-                ? `${originalText}\r\n\r\n${header}\r\n${appendText}`
+                ? `${originalText}\r\n\r\n${appendText}`
                 : appendText;
 
               // remarks（custom_fields）は appendText が空でなければ作成
