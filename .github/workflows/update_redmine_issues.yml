@@ -31,7 +31,7 @@ jobs:
             }
             core.info(`issueIds: ${JSON.stringify(issueIds)}`);
             core.setOutput('issue_ids', issueIds);
-            return JSON.stringify(issueIds);
+            return issueIds;
   
       # PR本文から <!-- Redmine: Start --> … <!-- Redmine: End --> の範囲を抽出
       - name: Extract Redmine Text From PR
@@ -98,7 +98,6 @@ jobs:
           APPEND_TEXT: ${{ steps.create_append_text.outputs.result }}
         with:
           script: |
-            core.info(`ISSUE_IDS: ${process.env.ISSUE_IDS}`);
             const issueIds = JSON.parse(process.env.ISSUE_IDS);
             const appendText = process.env.APPEND_TEXT || '';
             const sampleNumber = Number(process.env.SAMPLE_NUMBER);
