@@ -36,7 +36,8 @@ jobs:
               core.notice('PRタイトルにチケット番号が含まれていません。後続ジョブをスキップします。');
               return null;
             }
-            return JSON.stringify(issueIds);
+            return issueIds;
+            //return JSON.stringify(issueIds);
       - name: Check
         uses: actions/github-script@v7
         env:
@@ -47,7 +48,7 @@ jobs:
 
   update_redmine_issues:
     needs: [extract_issue_ids]
-    if: ${{ needs.extract.outputs.issue_ids != null }}
+    if: ${{ fromJSON(needs.extract.outputs.issue_ids) != null }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
