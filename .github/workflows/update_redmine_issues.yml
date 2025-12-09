@@ -42,7 +42,7 @@ jobs:
             // Redmine自動記入欄の（<!-- Redmine : Start --><!-- Redmine : End -->で囲まれた）テキストを抽出
             const redmineFieldRegex = /<!--\s*Redmine\s*:\s*Start\s*-->([\s\S]*?)<!--\s*Redmine\s*:\s*End\s*-->/i;
             const match = body.match(redmineFieldRegex);
-            const textForRedmine = match?.[1] ?? '';
+            let textForRedmine = match?.[1] ?? '';
             if (textForRedmine.trim() === '') {
               textForRedmine = '';
             }
