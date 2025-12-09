@@ -133,10 +133,10 @@ jobs:
               if (merged) {
                 const authorId = 222;
                 if (authorId != null)
-                  issue_update_body.issue.assigned_to_id = authorId;
+                  issueUpdateBody.issue.assigned_to_id = authorId;
                 
                 if (remarks.length > 0) 
-                  issue_update_body.issue.custom_fields = remarks;
+                  issueUpdateBody.issue.custom_fields = remarks;
               }
 
               const issueUpdateBodyJson = JSON.stringify(issueUpdateBody);
