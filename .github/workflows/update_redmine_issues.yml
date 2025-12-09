@@ -39,7 +39,7 @@ jobs:
 
   update_redmine_issues:
     needs: [extract]
-    if: ${{ fromJSON(needs.extract.outputs.issue_ids || '[]').length > 0 }}
+    if: ${{ (needs.extract.outputs.issue_ids || []).length > 0 }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
