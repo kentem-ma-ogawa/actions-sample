@@ -19,7 +19,6 @@ jobs:
        with:
          github-token: ${{ secrets.GITHUB_TOKEN }}
          script: |
-           core.info(`github.event.pull_request.assignees: ${github.event.pull_request.assignees}`);
            const { owner, repo } = context.repo;
            const { number, user } = context.payload.pull_request;
            await github.rest.issues.addAssignees({
