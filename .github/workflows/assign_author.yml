@@ -3,14 +3,13 @@ name: Auto Assign Author
 on:
   pull_request:
     types: [opened]
-    
-permissions:
-  pull-requests: write
   
 jobs:
   assign-author:
      runs-on: ubuntu-slim
-     timeout-minutes: 1   
+     timeout-minutes: 1  
+     permissions:
+       pull-requests: write
      # botでない、かつ、Assigneesが設定されていない場合のみ実行する
      if: ${{ !endsWith(github.actor, '[bot]') && toJSON(github.event.pull_request.assignees) == '[]' }}
      steps:
