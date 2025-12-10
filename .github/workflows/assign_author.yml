@@ -12,12 +12,11 @@ jobs:
      runs-on: ubuntu-slim
      timeout-minutes: 1   
      # botでない、かつ、Assigneesが設定されていない場合のみ実行する
-
+     if: ${{ !endsWith(github.actor, '[bot]') && github.event.pull_request.assignees == 'null' }}
      steps:
      - name: Assign Author to PR
        uses: actions/github-script@v7
        with:
-
          script: |
            const { owner, repo } = context.repo;
            const { number, user } = context.payload.pull_request;
