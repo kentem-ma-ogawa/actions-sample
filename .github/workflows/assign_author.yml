@@ -9,12 +9,21 @@ permissions:
   
 jobs:
   assign-author:
-     name: Assign Author to PR
      runs-on: ubuntu-slim
-     timeout-minutes: 1
-     
-     # botでない、かつ、Assigneesが設定されていない場合にのみ実行する
-     if: endsWith(github.actor, '[bot]') == false && github.event.pull_request.assignee == null
-
+     timeout-minutes: 1   
+     # botでない、かつ、Assigneesが設定されていない場合のみ実行する
+     if: ${{ !endsWith(github.actor, '[bot]') && github.event.pull_request.assignee == null }}
      steps:
-      - uses: technote-space/assign-author@v1
+     - name: Assign Author to PR
+       uses: actions/github-script@v7
+       with:
+         github-token: ${{secrets.GITHUB_TOKEN}}
+         script: |
+           const { owner, repo } = context.repo;
+           const { issueNumber, user } = context.payload.pull_request;
+           github.rest.issues.addAssignees({
+              owner: owner,
+              repo: repo,
+              issue_number: issueNumber,
+              assignees: [user.login]
+           });
