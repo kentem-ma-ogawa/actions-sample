@@ -44,6 +44,7 @@ jobs:
             // Redmine自動記入欄の（<!-- Redmine : Start --><!-- Redmine : End -->で囲まれた）テキストを抽出
             const redmineFieldRegex = /<!--\s*Redmine\s*:\s*Start\s*-->([\s\S]*?)<!--\s*Redmine\s*:\s*End\s*-->/i;
             const match = body.match(redmineFieldRegex);
+            
             let textForRedmine = match?.[1] ?? '';
             if (textForRedmine.trim() === '') {
               textForRedmine = '';
@@ -53,15 +54,15 @@ jobs:
             return textForRedmine;
           result-encoding: string
 
-      # Pandoc をセットアップ
-      - name: Setup Pandoc
+      # Pandocをインストール
+      - name: Install Pandoc
         if: ${{ github.event.action == 'closed' && steps.extract_pr_text.outputs.result != '' }}
         uses: pandoc/actions/setup@v1
         with:
           version: 3.8
           
-      # 抽出テキストを Pandoc で Textile へ変換し、追記用テキストを作成
-      - name: Convert to Textile
+      # 抽出したテキスト（GFM）をPandocでTextileへ変換し、追記用テキストを作成
+      - name: Convert GFM to Textile
         id: create_append_text
         if: ${{ github.event.action == 'closed' && steps.extract_pr_text.outputs.result != '' }}
         uses: actions/github-script@v7
@@ -71,7 +72,6 @@ jobs:
           script: |
             core.info(`textForRedmine: ${process.env.TEXT_FOR_REDMINE}`);
             const { execFileSync } = require('child_process');
-            const input = process.env.TEXT_FOR_REDMINE;
 
             // Pandoc 実行（GFM → Textile）
             let converted = '';
@@ -81,7 +81,7 @@ jobs:
                 '--from', 'gfm-raw_html+hard_line_breaks',
                 '--to', 'textile',
                 '--wrap', 'none'
-              ], { input, encoding: 'utf8' });
+              ], { process.env.TEXT_FOR_REDMINE, encoding: 'utf8' });
             } catch (e) {
               core.setFailed(`Markdown(GFM）→ Textileへの変換に失敗: ${e.message}`);
             }
@@ -139,6 +139,8 @@ jobs:
                 
                 if (remarks.length > 0) 
                   issueUpdateBody.issue.custom_fields = remarks;
+                else
+                  core.info('追記するテキストがありませんでした。');
               }
 
               const issueUpdateBodyJson = JSON.stringify(issueUpdateBody);
