@@ -78,7 +78,7 @@ jobs:
                 '--from', 'gfm-raw_html+hard_line_breaks',
                 '--to', 'textile',
                 '--wrap', 'none'
-              ], { process.env.TEXT_FOR_REDMINE, encoding: 'utf8' });
+              ], { input: process.env.TEXT_FOR_REDMINE, encoding: 'utf8' });
             } catch (e) {
               core.setFailed(`Markdown(GFM）→ Textileへの変換に失敗: ${e.message}`);
             }
