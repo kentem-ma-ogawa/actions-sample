@@ -19,7 +19,6 @@ jobs:
          script: |
            const { owner, repo } = context.repo;
            const { number, user } = context.payload.pull_request;
-           core.info(`user: ${user.login}`);
            await github.rest.issues.addAssignees({
               owner: owner,
               repo: repo,
