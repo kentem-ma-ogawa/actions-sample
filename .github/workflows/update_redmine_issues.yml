@@ -7,8 +7,9 @@ on:
 jobs:
   update_redmine_issues:
     if: >
-      (github.event.action != 'closed' || github.event.pull_request.merged == true) &&
-      (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
+      (github.event.action != 'closed' || github.event.pull_request.merged == true) 
+      && (!github.event.pull_request.draft)
+      && (contains(github.head_ref, 'redmine') || contains(github.head_ref, 'bugfix'))
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
