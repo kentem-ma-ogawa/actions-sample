@@ -4,9 +4,6 @@ on:
   pull_request:
     types: [opened, closed]
 
-env:
-  SAMPLE_NUMBER: ${{ secrets.SAMPLE_NUMBER }}
-
 jobs:
   update_redmine_issues:
     if: >
@@ -81,7 +78,7 @@ jobs:
                 '--from', 'gfm-raw_html+hard_line_breaks',
                 '--to', 'textile',
                 '--wrap', 'none'
-              ], { process.env.TEXT_FOR_REDMINE, encoding: 'utf8' });
+              ], { input: process.env.TEXT_FOR_REDMINE, encoding: 'utf8' });
             } catch (e) {
               core.setFailed(`Markdown(GFM）→ Textileへの変換に失敗: ${e.message}`);
             }
@@ -105,6 +102,7 @@ jobs:
         env:
           ISSUE_IDS: ${{ steps.extract_issue_ids.outputs.result }}
           APPEND_TEXT: ${{ steps.create_append_text.outputs.result }}
+          SAMPLE_NUMBER: ${{ secrets.SAMPLE_NUMBER }}
         with:
           script: |
             const issueIds = JSON.parse(process.env.ISSUE_IDS);
