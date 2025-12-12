@@ -1,8 +1,8 @@
-name: Auto Assign Author
+name: Auto assign author
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened]
   
 jobs:
   assign-author:
@@ -10,10 +10,10 @@ jobs:
      timeout-minutes: 1  
      permissions:
        pull-requests: write
-     # botでない、かつ、Assigneesが設定されていない場合のみ実行する
-     if: ${{ !endsWith(github.actor, '[bot]') && toJSON(github.event.pull_request.assignees) == '[]' }}
+     # assigneesが設定されていない場合のみ実行する
+     if: ${{ toJSON(github.event.pull_request.assignees) == '[]' }}
      steps:
-     - name: Assign Author to PR
+     - name: Assign author to PR
        uses: actions/github-script@v7
        with:
          script: |
